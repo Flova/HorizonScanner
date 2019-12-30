@@ -92,10 +92,6 @@ class DOGBoatFinder(ROIBoatFinder):
         # Calculate a mean in the vertical direction
         roi_mean = np.mean(gray_roi, axis=0).astype(np.uint8).reshape(1,1200)
 
-        # Repeat for viz
-        roi_mean = np.repeat(roi_mean, 60, axis=0)
-
-
         # Make fft  (not used currently)
         f = np.fft.fft2(roi_mean)
         fshift = np.fft.fftshift(f)
@@ -118,6 +114,8 @@ class DOGBoatFinder(ROIBoatFinder):
 
         # Show debug images
         if self._params['debug']:
+            # Repeat for viz
+            roi_mean = np.repeat(roi_mean, 60, axis=0)
             cv2.imshow('ROI MEAN', roi_mean)
             cv2.imshow('SPECTRUM', magnitude_spectrum)
 
