@@ -225,8 +225,7 @@ class BoatDetector(object):
         )
 
 if __name__ == "__main__":
-
-    params = {  # TODO load params
+    params = {  # TODO load params from yaml
             'horizon_detector': {
                 'k_mean_stepsize': 10,
                 'k_mean_width': 5,
