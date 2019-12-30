@@ -219,7 +219,7 @@ class BoatDetector(object):
             self._last_frame_dog = self.dog.copy()
 
         return (
-            cv2.resize(roi, (1200,40)), # aka roi_view
+            roi,
             rotated,
             dog
         )
