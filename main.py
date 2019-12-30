@@ -27,6 +27,9 @@ class KMeanHorizon(HorizonDetector):
         k_mean_stepsize = self._params['k_mean_stepsize']
         k_mean_width = self._params['k_mean_width']
 
+        # Make gray image
+        gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
         # Binary image in which the horizon points are placed
         points = np.zeros_like(gray_image)
 
