@@ -7,7 +7,7 @@ import math
 import os
 import yaml
 from horizon import KMeanHorizon
-from roi_boat_finder import DOGBoatFinder
+from roi_boat_finder import DOGBoatFinder, GradientBoatFinder
 
 
 class BoatDetector(object):
@@ -15,12 +15,12 @@ class BoatDetector(object):
         # Placeholders
         self.cap = None
         self._video_input = ""
-        self._last_frame_dog = None
+        self._last_frame_feature_map = None
 
         self._params = params
 
         self._horizon_detector = KMeanHorizon(self._params['horizon_detector'])
-        self._roi_boat_finder = DOGBoatFinder(self._params['boat_finder'])
+        self._roi_boat_finder = GradientBoatFinder(self._params['boat_finder'])
 
     def set_video_input(self, video_input):
         self._video_input = video_input
@@ -90,23 +90,23 @@ class BoatDetector(object):
                 rotated.shape[0]),
             :]
 
-        dog = self._roi_boat_finder.find_boats_in_roi(roi)
+        feature_map = self._roi_boat_finder.find_boats_in_roi(roi)
 
         # Get K for the complementary filter
         K = self._params['complementary_filter_k']
 
         # Calculate time based low pass using the complementary filter
-        if history and self._last_frame_dog is not None:
-            dog = (self._last_frame_dog * K + dog * (1 - K)).astype(np.uint8)
+        if history and self._last_frame_feature_map is not None:
+            feature_map = (self._last_frame_feature_map * K + feature_map * (1 - K)).astype(np.uint8)
 
         # Set last image to current image
         if history:
-            self._last_frame_dog = dog.copy()
+            self._last_frame_feature_map = feature_map.copy()
 
         return (
             roi,
             rotated,
-            dog
+            feature_map
         )
 
 if __name__ == "__main__":
