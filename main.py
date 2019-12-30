@@ -23,8 +23,8 @@ class KMeanHorizon(HorizonDetector):
         # Binary image in which the horizon points are placed
         points = np.zeros_like(image)
 
-        k_mean_stepsize = 10
-        k_mean_width = 5
+        k_mean_stepsize = self._params['k_mean_stepsize']
+        k_mean_width = self._params['k_mean_width']
 
         # Iterate over vertical image slices
         for i in range(0, int(image.shape[1] - k_mean_width), k_mean_stepsize):
@@ -54,19 +54,25 @@ class KMeanHorizon(HorizonDetector):
             cv2.circle(points, point, 1, 255, -1)    # TODO  use list of points instead
 
         # Fit a RANSEC like line in the horizon point map  (default params)
-        vx, vy, x0, y0 = cv2.fitLine(np.argwhere(points == 255), cv2.DIST_L1, 0, 0.005, 0.01)
+        line_slope_x, line_slope_y, line_base_x, line_base_y = cv2.fitLine(np.argwhere(points == 255), cv2.DIST_L1, 0, 0.005, 0.01)
 
+        confidence = 1 # TODO find better confidence metric
+
+        return line_slope_x, line_slope_y, line_base_x, line_base_y, confidence
 
 class BoatDetector(object):
-    def __init__(self):
+    def __init__(self, params):
         # Placeholders
         self.cap = None
         self._video_input = ""
         self._last_frame_dog = None
 
+        self._params = params
+
+        self._horizon_detector = KMeanHorizon(self._params['horizon_detector'])
     def set_video_input(self, video_input):
         self._video_input = video_input
-        self._cap = cv2.VideoCapture(self._video_input)  # "/home/florian/Projekt/BehindTheHorizon/data/.mp4"
+        self._cap = cv2.VideoCapture(self._video_input)
 
     def _draw_mask(self, image, mask, color, opacity=0.5):
             # Make a colored image
@@ -90,7 +96,7 @@ class BoatDetector(object):
             frame = cv2.resize(frame, (1200,800)) # TODO keep aspect ratio
 
             # Run detection on frame
-            self.analyse_image(frame, history=True)
+            roi_view, rotated, dog  = self.analyse_image(frame, roi_height=self._params['default_roi_height'], history=True)
 
              # Show images
             cv2.imshow('ROI', self.roi_view)
@@ -167,20 +173,33 @@ class BoatDetector(object):
         if history and self._last_frame_dog is not None:
             dog = (self._last_frame_dog * K + dog * (1 - K)).astype(np.uint8)
 
-        # Scale roi view
-        self.roi_view = cv2.resize(roi, (1200,40))
-        self.roi_mean = roi_mean
-        self.rotated = rotated
-        self.magnitude_spectrum = magnitude_spectrum
-        self.dog = dog
-
         # Set last image to current image
         if history:
             self._last_frame_dog = self.dog.copy()
 
-
+        return (
+            cv2.resize(roi, (1200,40)), # aka roi_view
+            rotated,
+            dog
+        )
 
 if __name__ == "__main__":
-    bt = BoatDetector()
+
+    params = {  # TODO load params
+            'horizon_detector': {
+                'k_mean_stepsize': 10,
+                'k_mean_width': 5,
+                'debug': True
+            },
+
+            'boat_finder': {
+                'boat_finder_dog_big_kernel': 51,
+                'boat_finder_dog_small_kernel': 31,
+                'debug': True
+            },
+            'default_roi_height': 10,
+        }
+
+    bt = BoatDetector(params)
     bt.run_detector_on_video_input("/home/florian/Projekt/BehindTheHorizon/data/VID_20180818_063412.mp4")
 
