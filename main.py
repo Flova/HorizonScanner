@@ -152,12 +152,12 @@ class BoatDetector(object):
 
         # Scale roi view
         self.roi_view = cv2.resize(roi, (1200,40))
-
         self.roi_mean = roi_mean
         self.rotated = rotated
         self.magnitude_spectrum = magnitude_spectrum
         self.dog = dog
 
+        # Set last image to current image
         if history:
             self._last_frame_dog = self.dog.copy()
 
