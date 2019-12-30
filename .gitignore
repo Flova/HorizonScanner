@@ -1,3 +1,4 @@
 data/
 misc/
 *.pyc
+.vscode/
