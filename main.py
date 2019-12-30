@@ -23,11 +23,13 @@ class KMeanHorizon(HorizonDetector):
         super().__init__(params)
 
     def get_horizon(self, image):
-        # Binary image in which the horizon points are placed
-        points = np.zeros_like(image)
-
+        # Load params
         k_mean_stepsize = self._params['k_mean_stepsize']
         k_mean_width = self._params['k_mean_width']
+
+        # Binary image in which the horizon points are placed
+        points = np.zeros_like(gray_image)
+
 
         # Iterate over vertical image slices
         for i in range(0, int(image.shape[1] - k_mean_width), k_mean_stepsize):
