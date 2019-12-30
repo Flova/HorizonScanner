@@ -165,7 +165,9 @@ class BoatDetector(object):
             # Show images
             cv2.imshow('ROI', roi_view)
             cv2.imshow('ROT', rotated)
-            cv2.imshow('DOG', dog)
+            # Repeat for viz
+            dog_large = np.repeat(dog, 60, axis=0)
+            cv2.imshow('DOG', dog_large)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
