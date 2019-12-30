@@ -2,3 +2,7 @@ data/
 misc/
 *.pyc
 .vscode/
+
+# Ignore the config file
+
+config.yaml
