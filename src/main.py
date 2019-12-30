@@ -4,6 +4,8 @@ import numpy as np
 import time
 import imutils
 import math
+import os
+import yaml
 from horizon import KMeanHorizon
 from roi_boat_finder import DOGBoatFinder
 
@@ -108,22 +110,16 @@ class BoatDetector(object):
         )
 
 if __name__ == "__main__":
-    params = {  # TODO load params from yaml
-            'horizon_detector': {
-                'k_mean_stepsize': 10,
-                'k_mean_width': 5,
-                'debug': True
-            },
+    config_path = os.path.join(os.path.dirname(__file__), "../config/config.yaml")
 
-            'boat_finder': {
-                'boat_finder_dog_big_kernel': 51,
-                'boat_finder_dog_small_kernel': 31,
-                'debug': True
-            },
-            'default_roi_height': 10,
-            'complementary_filter_k': 0.9,
-            'video_source': "/home/florian/Projekt/BehindTheHorizon/data/VID_20180818_064054.mp4"
-        }
+    config_path = os.path.realpath(config_path)
+
+    if not os.path.exists(config_path):
+        print("No config file specified, see the 'example.config.yaml' in 'config' and save your version as 'config.yaml'!")
+
+    with open(config_path, "r") as f:q
+        params = yaml.safe_load(f)
+
     bt = BoatDetector(params)
     bt.run_detector_on_video_input(params['video_source'])
 
