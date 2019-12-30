@@ -187,7 +187,7 @@ class BoatDetector(object):
 
         # Get the horizon in the image
         if horizon is None:
-            line_slope_x, line_slope_y, line_base_x, line_base_y, _ = self._horizon_detector.get_horizon()
+            line_slope_x, line_slope_y, line_base_x, line_base_y, _ = self._horizon_detector.get_horizon(image)
         else:
             line_slope_x, line_slope_y, line_base_x, line_base_y, _ = horizon
 
