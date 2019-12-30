@@ -10,9 +10,12 @@ class HorizonDetector(object):
     Abstract definition of a horizon detector
     """
     def __init__(self, params):
-        self.params = params
+        self._params = params
 
     def get_horizon(self):
+        """
+        :returns: line_slope_x, line_slope_y, x, y, confidence
+        """
         raise NotImplementedError
 
 class KMeanHorizon(HorizonDetector):
@@ -60,6 +63,65 @@ class KMeanHorizon(HorizonDetector):
 
         return line_slope_x, line_slope_y, line_base_x, line_base_y, confidence
 
+
+class ROIBoatFinder(object):
+    """
+    Abstract definition of a roi boat finder
+    """
+    def __init__(self, params):
+        self._params = params
+
+    def find_boats_in_roi(self, roi):
+        raise NotImplementedError
+
+
+class DOGBoatFinder(ROIBoatFinder):
+    def __init__(self, params):
+        super().__init__(params)
+
+    def find_boats_in_roi(self, roi):
+        # Get params
+        big_kernel = self._params['boat_finder_dog_big_kernel']
+        small_kernel = self._params['boat_finder_dog_small_kernel']
+
+        # Get gray roi
+        gray_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+
+        # Calculate a mean in the vertical direction
+        roi_mean = np.mean(gray_roi, axis=0).astype(np.uint8).reshape(1,1200)
+
+        # Repeat for viz
+        roi_mean = np.repeat(roi_mean, 60, axis=0)
+
+
+        # Make fft  (not used currently)
+        f = np.fft.fft2(roi_mean)
+        fshift = np.fft.fftshift(f)
+        magnitude_spectrum = (20*np.log(np.abs(fshift))).astype(np.uint8)
+
+
+        # Calculate difference of gaussians
+        blur_large = cv2.blur(roi_mean, (big_kernel,1)).astype(np.float)
+        blur_small = cv2.blur(roi_mean, (small_kernel,1)).astype(np.float)
+        dog = blur_small - blur_large
+
+        # Enshure all values are above 0
+        dog[dog < 0] = 0
+
+        # Scale image to uint8 scale
+        dog = dog * 255
+
+        # Convert image
+        dog = dog.astype(np.uint8)
+
+        # Show debug images
+        if self._params['debug']:
+            cv2.imshow('ROI MEAN', roi_mean)
+            cv2.imshow('SPECTRUM', magnitude_spectrum)
+
+        return dog
+
+
 class BoatDetector(object):
     def __init__(self, params):
         # Placeholders
@@ -70,6 +132,8 @@ class BoatDetector(object):
         self._params = params
 
         self._horizon_detector = KMeanHorizon(self._params['horizon_detector'])
+        self._roi_boat_finder = ROIBoatFinder(self._params['boat_finder'])
+
     def set_video_input(self, video_input):
         self._video_input = video_input
         self._cap = cv2.VideoCapture(self._video_input)
@@ -98,12 +162,10 @@ class BoatDetector(object):
             # Run detection on frame
             roi_view, rotated, dog  = self.analyse_image(frame, roi_height=self._params['default_roi_height'], history=True)
 
-             # Show images
-            cv2.imshow('ROI', self.roi_view)
-            cv2.imshow('ROT', self.rotated)
-            cv2.imshow('ROI MEAN', self.roi_mean)
-            cv2.imshow('SPECTRUM', self.magnitude_spectrum)
-            cv2.imshow('DOG', self.dog)
+            # Show images
+            cv2.imshow('ROI', roi_view)
+            cv2.imshow('ROT', rotated)
+            cv2.imshow('DOG', dog)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -112,59 +174,31 @@ class BoatDetector(object):
         self._cap.release()
         cv2.destroyAllWindows()
 
-    def analyse_image(self, image, roi_height=10, k_mean_width=5, history=True):
+    def analyse_image(self, image, roi_height=10, horizon=None, history=True):
         # Make grayscale version
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-        """ Debug line printout
-        cv2.line(
-            gray,
-            (int(y0 + -500 * vy) , int(x0 + -500 * vx)),
-            (int(y0 + 500 * vy) , int(x0 + 500 * vx)),
-            (0,0,255),
-            2)
-        """
+        # Get the horizon in the image
+        if horizon is None:
+            line_slope_x, line_slope_y, line_base_x, line_base_y, _ = self._horizon_detector.get_horizon()
+        else:
+            line_slope_x, line_slope_y, line_base_x, line_base_y, _ = horizon
 
         # Rotate image using imutils TODO do this in opencv
-        rotated = imutils.rotate(image, math.degrees(math.atan(vx/ vy)))
+        rotated = imutils.rotate(image, math.degrees(math.atan(line_slope_x/ line_slope_y)))
 
         # Crop roi out of rotated image
         roi = rotated[
             max(
-                int(x0 - roi_height // 2),
+                int(line_base_x - roi_height // 2),
                 0)
             :
             min(
-                int(x0 + roi_height // 2),
+                int(line_base_x + roi_height // 2),
                 rotated.shape[0]),
             :]
 
-        # Get gray roi
-        gray_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-
-        # Calculate a mean in the vertical direction
-        roi_mean = np.mean(gray_roi, axis=0).astype(np.uint8).reshape(1,1200)
-        # Repeat for viz
-        roi_mean = np.repeat(roi_mean, 60, axis=0)
-
-        # Make fft
-        f = np.fft.fft2(roi_mean)
-        fshift = np.fft.fftshift(f)
-        magnitude_spectrum = (20*np.log(np.abs(fshift))).astype(np.uint8)
-
-        # Calculate difference of gaussians
-        blur_large = cv2.blur(roi_mean, (51,1)).astype(np.float)
-        blur_small = cv2.blur(roi_mean, (31,1)).astype(np.float)
-        dog = blur_small - blur_large
-
-        # Enshure all values are above 0
-        dog[dog < 0] = 0
-
-        # Scale image to uint8 scale
-        dog = dog*255
-
-        # Convert image
-        dog = dog.astype(np.uint8)
+        dog = self._roi_boat_finder.find_boats_in_roi(roi)
 
         # Get K for the complementary filter
         K = 0.8
