@@ -93,7 +93,7 @@ class DOGBoatFinder(ROIBoatFinder):
         gray_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
 
         # Calculate a mean in the vertical direction
-        roi_mean = np.mean(gray_roi, axis=0).astype(np.uint8).reshape(1,1200)
+        roi_mean = np.mean(gray_roi, axis=0).astype(np.uint8).reshape(1,roi.shape[1])
 
         # Make fft  (not used currently)
         f = np.fft.fft2(roi_mean)
