@@ -50,7 +50,7 @@ class DOGBoatFinder(ROIBoatFinder):
 
         # Convert image
         dog = dog.astype(np.uint8)
-
+        
         # Show debug images
         if self._params['debug']:
             # Repeat for viz
@@ -59,3 +59,27 @@ class DOGBoatFinder(ROIBoatFinder):
             cv2.imshow('SPECTRUM', magnitude_spectrum)
 
         return dog
+
+
+class GradientBoatFinder(ROIBoatFinder):
+    def __init__(self, params):
+        super().__init__(params)
+
+    def find_boats_in_roi(self, roi):
+        gain = self._params['gradient_gain']
+
+        # Get gray roi
+        gray_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+
+        # Exec horizontal sobel filter
+        sobelx64f = cv2.Sobel(gray_roi,cv2.CV_64F,1,0,ksize=3)
+
+        # Normalize values back to uint8 ranges
+        abs_sobel64f = np.absolute(sobelx64f)
+        sobel_8u = np.uint8(abs_sobel64f) * gain
+
+        # Pull the maximum gradient vertically
+        sobel = np.amax(sobel_8u, axis=0).reshape(1, -1)
+
+        return sobel
+
