@@ -132,7 +132,7 @@ class BoatDetector(object):
         self._params = params
 
         self._horizon_detector = KMeanHorizon(self._params['horizon_detector'])
-        self._roi_boat_finder = ROIBoatFinder(self._params['boat_finder'])
+        self._roi_boat_finder = DOGBoatFinder(self._params['boat_finder'])
 
     def set_video_input(self, video_input):
         self._video_input = video_input
