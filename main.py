@@ -163,7 +163,9 @@ class BoatDetector(object):
             frame = cv2.resize(frame, (1200,800)) # TODO keep aspect ratio
 
             # Run detection on frame
-            roi_view, rotated, dog  = self.analyse_image(frame, roi_height=self._params['default_roi_height'], history=True)
+            roi, rotated, dog  = self.analyse_image(frame, roi_height=self._params['default_roi_height'], history=True)
+
+            roi_view = cv2.resize(roi, (1200, 60))
 
             # Show images
             cv2.imshow('ROI', roi_view)
