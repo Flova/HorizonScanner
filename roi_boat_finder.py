@@ -42,7 +42,7 @@ class DOGBoatFinder(ROIBoatFinder):
         blur_small = cv2.blur(roi_mean, (small_kernel,1)).astype(np.float)
         dog = blur_small - blur_large
 
-        # Enshure all values are above 0
+        # Ensure all values are above 0
         dog[dog < 0] = 0
 
         # Scale image to uint8 scale
