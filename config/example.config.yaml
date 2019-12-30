@@ -1,16 +1,16 @@
 # Example configuration for the HorizonScanner
 
-'horizon_detector': {
-    'k_mean_stepsize': 10,
-    'k_mean_width': 5,
-    'debug': True
-},
+horizon_detector:
+    k_mean_stepsize: 10
+    k_mean_width: 5
+    debug: False
 
-'boat_finder': {
-    'boat_finder_dog_big_kernel': 51,
-    'boat_finder_dog_small_kernel': 31,
-    'debug': True
-},
-'default_roi_height': 10,
-'complementary_filter_k': 0.9,
-'video_source': "/home/<user>/data" # or "/dev/video0"
+boat_finder:
+    boat_finder_dog_big_kernel: 51
+    boat_finder_dog_small_kernel: 31
+    gradient_gain: 3
+    debug: False
+
+default_roi_height: 20
+complementary_filter_k: 0.5
+video_source: "/home/<user>/data" # or "/dev/video0"
