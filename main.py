@@ -208,7 +208,7 @@ class BoatDetector(object):
         dog = self._roi_boat_finder.find_boats_in_roi(roi)
 
         # Get K for the complementary filter
-        K = 0.8
+        K = self._params['complementary_filter_k']
 
         # Calculate time based low pass using the complementary filter
         if history and self._last_frame_dog is not None:
