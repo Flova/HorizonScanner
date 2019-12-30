@@ -239,8 +239,8 @@ if __name__ == "__main__":
                 'debug': True
             },
             'default_roi_height': 10,
+            'complementary_filter_k': 0.9,
         }
-
     bt = BoatDetector(params)
     bt.run_detector_on_video_input("/home/florian/Projekt/BehindTheHorizon/data/VID_20180818_063412.mp4")
 
