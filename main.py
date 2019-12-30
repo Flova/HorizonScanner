@@ -216,7 +216,7 @@ class BoatDetector(object):
 
         # Set last image to current image
         if history:
-            self._last_frame_dog = self.dog.copy()
+            self._last_frame_dog = dog.copy()
 
         return (
             roi,
