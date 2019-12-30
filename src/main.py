@@ -117,7 +117,7 @@ if __name__ == "__main__":
     if not os.path.exists(config_path):
         print("No config file specified, see the 'example.config.yaml' in 'config' and save your version as 'config.yaml'!")
 
-    with open(config_path, "r") as f:q
+    with open(config_path, "r") as f:
         params = yaml.safe_load(f)
 
     bt = BoatDetector(params)
