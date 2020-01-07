@@ -5,6 +5,8 @@ import time
 import math
 
 
+#import matplotlib.pyplot as plt
+
 class HorizonDetector(object):
     """
     Abstract definition of a horizon detector
@@ -17,6 +19,104 @@ class HorizonDetector(object):
         :returns: line_slope_x, line_slope_y, x, y, confidence
         """
         raise NotImplementedError
+
+
+class RoiCombinedHorizon(HorizonDetector):
+    def __init__(self, params):
+        super().__init__(params)
+        
+    def get_horizon(self, image):
+          
+        gray=cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
+
+        #sharpe image
+        blured = cv2.GaussianBlur(gray, (0,0), 15)
+        sharpened = cv2.addWeighted(gray, 1.5, blured, -0.5, 0)
+        #cv2.imshow('gray', gray)
+        #cv2.imshow('sharpened', sharpened)
+
+        #multiscale edge processing
+        edgeimage = np.zeros(gray.shape,dtype=np.float)
+        medianscales = [5,11,15,21]
+        
+        weight = 1.0/len(medianscales)
+        cannyMin = 20 # pixelvalues below will be thrown out
+                      # pixelvalues between will be considered as edge, if connected to strong edge
+        cannyMax = 60 # pixelvalues above will be considered as strong edge 
+        for oneMedianScale in medianscales:
+            if oneMedianScale < 1:
+                median = sharpened
+            else:
+                median = cv2.medianBlur(sharpened,oneMedianScale)
+            canny = cv2.Canny(median,cannyMin,cannyMax)
+            edgeimage = cv2.add(edgeimage, canny * weight)
+            #cv2.imshow('median', median)
+            #cv2.imshow('canny', canny)
+            #cv2.waitKey(0)
+                
+        edgeimage = edgeimage.astype(np.uint8)
+        cv2.imshow('edgeimage', edgeimage) 
+
+        #Only keep strongest edges
+        threshold=90
+        ret, threshed = cv2.threshold(edgeimage, threshold, 255, cv2.THRESH_BINARY)
+        cv2.imshow('threshed', threshed) 
+        cv2.waitKey(0)
+
+        #Inital horizont guess via hough transform
+        minLineLength = 100
+        maxLineGap = 50
+        houghThresh=1
+        lines = cv2.HoughLinesP(image=threshed,rho=1,theta=np.pi/(180*2),threshold=houghThresh,minLineLength=minLineLength,maxLineGap=maxLineGap)
+        for oneline in lines:
+            for x1,y1,x2,y2 in oneline:
+                cv2.line(image,(x1,y1),(x2,y2),(0,255,0),1)
+                break # only take first line
+            break # only take first line
+
+        #calc residual / error of every pixel to hough line
+        threshedPixelList=[]
+        distances=[]
+        x1,y1,x2,y2 in lines[0]#get line description by using the two points of the hough line
+        p1=np.array([x1,y1])
+        p2=np.array([x2,y2])
+        for onePix in cv2.findNonZero(threshed):
+            threshedPixelList.append(onePix[0])
+            p3=np.array([onePix[0][0],onePix[0][1]])
+            d = np.linalg.norm(np.cross(p2-p1, p1-p3))/np.linalg.norm(p2-p1) 
+            distances.append(d)
+        
+        #median filter thresholded pixels by residual / error => only keep pts with low error
+        q1=np.quantile(distances, 0.2) #calc q1 quantile for filtering
+        medianFilteredHorizPts = []
+        for idx, oneDist in enumerate(distances):
+            if oneDist <= q1:
+                medianFilteredHorizPts.append(threshedPixelList[idx])
+        medianFilteredHorizPts = np.array(medianFilteredHorizPts)
+
+        #fit final horizontal line by calc least square 
+        [vx,vy,x,y] = cv2.fitLine(
+            points=medianFilteredHorizPts, 
+            distType=cv2.DIST_L1,
+            param=0, 
+            reps=0.01, 
+            aeps=0.01)
+
+        # Now find two extreme points on the line to draw line
+        lefty = int((-x*vy/vx) + y)
+        righty = int(((gray.shape[1]-x)*vy/vx)+y)
+        cv2.line(image,(gray.shape[1]-1,righty),(0,lefty),(255,0,0),1)
+        cv2.imshow('line', image)
+        cv2.waitKey(0) 
+        return 1
+
+
+a = RoiCombinedHorizon(1)
+img=cv2.imread("horizontest2.jpg", cv2.IMREAD_COLOR)
+img = cv2.resize(img, (800,300))
+
+a.get_horizon(img)
+
 
 class KMeanHorizon(HorizonDetector):
     def __init__(self, params):
@@ -48,7 +148,8 @@ class KMeanHorizon(HorizonDetector):
 
             # Determine which class is the sky
             if label[0] != 1:
-                # Invert if the sky is not class 1
+                # Invert
+                # if the sky is not class 1
                 label = np.invert(label)
 
             # Weired bug fix
