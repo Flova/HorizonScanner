@@ -5,7 +5,7 @@ import time
 import math
 
 
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 class HorizonDetector(object):
     """
@@ -25,8 +25,111 @@ class RoiCombinedHorizon(HorizonDetector):
     def __init__(self, params):
         super().__init__(params)
         
+        
     def get_horizon(self, image):
-          
+
+        X = np.array([
+            [1],
+            [2],
+            [3]])
+        A = np.eye(3)
+        B = np.array([
+            [1],
+            [2],
+            [3]])
+
+        r = np.matmul(A,B)
+        r = np.matmul(X.T,r)
+        self.detect_roi(image)
+    
+
+    def getColorMeans(self, inpic):
+        r,g,b=cv2.split(inpic)
+        #X=np.array([np.mean(r),np.mean(g),np.mean(b)])
+        X = np.array([
+            [np.mean(r)],
+            [np.mean(g)],
+            [np.mean(b)]])
+        return X
+
+    def getColorCovar(self, inpic):
+        r,g,b=cv2.split(inpic)
+        r=r.flat
+        g=g.flat
+        b=b.flat
+        X = np.stack((r,g,b), axis=0)
+        a= np.cov(X)
+        #b = cv2.calcCovarMatrix([r,g,b])
+        return a
+
+    def calc_bhattacharyya_dist(self, m1, m2, c1, c2):
+        #D(R1,R2)=(mean1-mean2)^T*(S1-S2)^-1 *(m1-m2)
+        meandiff = m1-m2
+        covdiff = (c1+c2)/2
+        dist = np.matmul(np.linalg.inv(covdiff),meandiff)
+        dist = np.matmul(meandiff.T,dist)
+        #dist=meandiff.T*(np.linalg.inv(covdiff)*meandiff)
+        return dist
+ 
+    def detect_roi(self, image):
+
+
+        regionSplitsCount = 8
+        overlappercentage = 0.5
+        imgHeight= image.shape[0]
+        regionSplitHeight = imgHeight / regionSplitsCount
+        print(regionSplitHeight)
+
+        curYval=0
+        regionsMeanAndCovar=[]
+        regionsImgs=[]
+        for i in range(regionSplitsCount):
+            regionSplitYStart=int(curYval-regionSplitHeight-regionSplitHeight*overlappercentage) 
+            regionSplitYEnd=int(curYval+regionSplitHeight+regionSplitHeight*overlappercentage)
+            regionSplitYStart = max(regionSplitYStart,0)
+            regionSplitYEnd = min(regionSplitYEnd,imgHeight)
+            print("-----")                        
+            print(regionSplitYStart)
+            print(regionSplitYEnd)
+            #oneImgSplit = inpic[regionSplitYStart:regionSplitYEnd,0:inpic.shape[1]]
+            #print(oneImgSplit.shape)
+            curYval = curYval+regionSplitHeight
+            #imgSplitted.append(oneImgSplit)
+            #ySplits.append([regionSplitYStart,regionSplitYEnd])
+            regionImg = image[regionSplitYStart:regionSplitYEnd,0:image.shape[1]]
+            regionsImgs.append(regionImg)
+            cv2.imshow('regionImg', regionImg)
+            
+            regionColorMean = self.getColorMeans(regionImg)
+            regionColorCovar = self.getColorCovar(regionImg)
+            regionsMeanAndCovar.append([regionColorMean,regionColorCovar])
+
+
+        print("asf")
+        i=1
+        while True:
+            d1 = self.calc_bhattacharyya_dist(
+                regionsMeanAndCovar[i-1][0],regionsMeanAndCovar[i][0],
+                regionsMeanAndCovar[i-1][1],regionsMeanAndCovar[i][1])
+            d2 = self.calc_bhattacharyya_dist(
+                regionsMeanAndCovar[i+1][0],regionsMeanAndCovar[i][0],
+                regionsMeanAndCovar[i+1][1],regionsMeanAndCovar[i][1])
+            d=d1+d2
+            print("--------")
+            print(d1)
+            print(d2)
+            print(d)
+            i=i+1
+            if i == regionSplitsCount-1:
+                break
+
+        fig, axes = plt.subplots(regionSplitsCount, 1) #, sharex='row', sharey='row'
+        for i in range(regionSplitsCount):
+            axes[i].imshow(regionsImgs[i])
+        plt.show()
+        cv2.waitKey(0)
+
+    def detect_horizon(self, image):
         gray=cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
 
         #sharpe image
@@ -112,7 +215,8 @@ class RoiCombinedHorizon(HorizonDetector):
 
 
 a = RoiCombinedHorizon(1)
-img=cv2.imread("horizontest2.jpg", cv2.IMREAD_COLOR)
+images=["horizontest2.jpg","horizontest4.jpg","horizontest5.png"]
+img=cv2.imread(images[1], cv2.IMREAD_COLOR)
 img = cv2.resize(img, (800,300))
 
 a.get_horizon(img)
