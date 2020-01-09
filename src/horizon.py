@@ -27,25 +27,16 @@ class RoiCombinedHorizon(HorizonDetector):
         
         
     def get_horizon(self, image):
-
-        X = np.array([
-            [1],
-            [2],
-            [3]])
-        A = np.eye(3)
-        B = np.array([
-            [1],
-            [2],
-            [3]])
-
-        r = np.matmul(A,B)
-        r = np.matmul(X.T,r)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        #contrast = 1.5
+        #brightness = 0
+        #image = cv2.addWeighted( image, contrast, image, 0, brightness)
+        #image = np.dstack((image,image,image))
         self.detect_roi(image)
     
 
     def getColorMeans(self, inpic):
         r,g,b=cv2.split(inpic)
-        #X=np.array([np.mean(r),np.mean(g),np.mean(b)])
         X = np.array([
             [np.mean(r)],
             [np.mean(g)],
@@ -58,34 +49,37 @@ class RoiCombinedHorizon(HorizonDetector):
         g=g.flat
         b=b.flat
         X = np.stack((r,g,b), axis=0)
-        a= np.cov(X)
-        #b = cv2.calcCovarMatrix([r,g,b])
+        a = np.cov(X)
         return a
 
     def calc_bhattacharyya_dist(self, m1, m2, c1, c2):
-        #D(R1,R2)=(mean1-mean2)^T*(S1-S2)^-1 *(m1-m2)
+        #Dist(R1,R2)=(mean1-mean2)^T*((Cov1+Cov2)/2.0)^-1 *(mean1-mean2)
         meandiff = m1-m2
         covdiff = (c1+c2)/2
         dist = np.matmul(np.linalg.inv(covdiff),meandiff)
         dist = np.matmul(meandiff.T,dist)
+        #dist = dist*1/8
+        #dist = dist + 0.5*np.log((np.linalg.det(covdiff))/np.sqrt(np.linalg.det(c1)*np.linalg.det(c2)) )
         #dist=meandiff.T*(np.linalg.inv(covdiff)*meandiff)
         return dist
  
     def detect_roi(self, image):
 
-
-        regionSplitsCount = 8
-        overlappercentage = 0.5
+        #create horizontal region slides of the image with 50% overlap
+        regionSplitsCount = 6
+        regionSubSplitsCount = regionSplitsCount+2
         imgHeight= image.shape[0]
-        regionSplitHeight = imgHeight / regionSplitsCount
-        print(regionSplitHeight)
+        regionStepSize = imgHeight/(regionSubSplitsCount-1)
+        #regionSplitHeight = imgHeight/(regionSplitsCount-1)
+        print(imgHeight)
+        print(regionStepSize)
 
         curYval=0
         regionsMeanAndCovar=[]
         regionsImgs=[]
-        for i in range(regionSplitsCount):
-            regionSplitYStart=int(curYval-regionSplitHeight-regionSplitHeight*overlappercentage) 
-            regionSplitYEnd=int(curYval+regionSplitHeight+regionSplitHeight*overlappercentage)
+        for i in range(regionSubSplitsCount):
+            regionSplitYStart=int(curYval-regionStepSize) 
+            regionSplitYEnd=int(curYval+regionStepSize)
             regionSplitYStart = max(regionSplitYStart,0)
             regionSplitYEnd = min(regionSplitYEnd,imgHeight)
             print("-----")                        
@@ -93,7 +87,7 @@ class RoiCombinedHorizon(HorizonDetector):
             print(regionSplitYEnd)
             #oneImgSplit = inpic[regionSplitYStart:regionSplitYEnd,0:inpic.shape[1]]
             #print(oneImgSplit.shape)
-            curYval = curYval+regionSplitHeight
+            curYval = curYval+regionStepSize
             #imgSplitted.append(oneImgSplit)
             #ySplits.append([regionSplitYStart,regionSplitYEnd])
             regionImg = image[regionSplitYStart:regionSplitYEnd,0:image.shape[1]]
@@ -104,27 +98,22 @@ class RoiCombinedHorizon(HorizonDetector):
             regionColorCovar = self.getColorCovar(regionImg)
             regionsMeanAndCovar.append([regionColorMean,regionColorCovar])
 
+        subRegionDists = []
+        for i in range(regionSubSplitsCount-1):
+            subRegionDist = self.calc_bhattacharyya_dist(
+                regionsMeanAndCovar[i][0],regionsMeanAndCovar[i+1][0],
+                regionsMeanAndCovar[i][1],regionsMeanAndCovar[i+1][1])
+            subRegionDists.append(subRegionDist)
+        print(subRegionDists)
 
-        print("asf")
-        i=1
-        while True:
-            d1 = self.calc_bhattacharyya_dist(
-                regionsMeanAndCovar[i-1][0],regionsMeanAndCovar[i][0],
-                regionsMeanAndCovar[i-1][1],regionsMeanAndCovar[i][1])
-            d2 = self.calc_bhattacharyya_dist(
-                regionsMeanAndCovar[i+1][0],regionsMeanAndCovar[i][0],
-                regionsMeanAndCovar[i+1][1],regionsMeanAndCovar[i][1])
-            d=d1+d2
-            print("--------")
-            print(d1)
-            print(d2)
-            print(d)
-            i=i+1
-            if i == regionSplitsCount-1:
-                break
-
-        fig, axes = plt.subplots(regionSplitsCount, 1) #, sharex='row', sharey='row'
+        regionDists = []
         for i in range(regionSplitsCount):
+            regionDist = subRegionDists[i] + subRegionDists[i+1]
+            regionDists.append(regionDist)
+        print(regionDists)
+
+        fig, axes = plt.subplots(regionSubSplitsCount, 1) #, sharex='row', sharey='row'
+        for i in range(regionSubSplitsCount):
             axes[i].imshow(regionsImgs[i])
         plt.show()
         cv2.waitKey(0)
@@ -214,9 +203,9 @@ class RoiCombinedHorizon(HorizonDetector):
         return 1
 
 
-a = RoiCombinedHorizon(1)
-images=["horizontest2.jpg","horizontest4.jpg","horizontest5.png"]
-img=cv2.imread(images[1], cv2.IMREAD_COLOR)
+a = RoiCombinedHorizon(0)
+images=["horizontest.jpg","horizontest2.jpg","horizontest4.jpg","horizontest5.png"]
+img=cv2.imread(images[0], cv2.IMREAD_COLOR)
 img = cv2.resize(img, (800,300))
 
 a.get_horizon(img)
