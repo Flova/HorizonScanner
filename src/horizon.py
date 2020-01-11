@@ -7,6 +7,7 @@ import math
 
 import matplotlib.pyplot as plt
 
+
 class HorizonDetector(object):
     """
     Abstract definition of a horizon detector
@@ -28,12 +29,23 @@ class RoiCombinedHorizon(HorizonDetector):
         
     def get_horizon(self, image):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        #contrast = 1.5
-        #brightness = 0
-        #image = cv2.addWeighted( image, contrast, image, 0, brightness)
-        #image = np.dstack((image,image,image))
-        self.detect_roi(image)
-    
+
+        ROI=self.detect_roi(image)
+        ROIImage = image[ROI[0]:ROI[1],ROI[2]:ROI[3]]
+
+        vx,vy,x,y = self.detect_horizon(ROIImage)
+
+        y = y + ROI[0]
+
+        lefty = int((-x*vy/vx) + y)
+        righty = int(((image.shape[1]-x)*vy/vx)+y)
+        cv2.line(image,(image.shape[1]-1,righty),(0,lefty),(255,0,0),1)
+        cv2.imshow('line', image)
+
+        cv2.waitKey(0) 
+        confidence = 1
+
+        return vx,vy,x,y, confidence 
 
     def getColorMeans(self, inpic):
         r,g,b=cv2.split(inpic)
@@ -53,6 +65,7 @@ class RoiCombinedHorizon(HorizonDetector):
         return a
 
     def calc_bhattacharyya_dist(self, m1, m2, c1, c2):
+        #not the correct formula but still works according to the paper and some experiments
         #Dist(R1,R2)=(mean1-mean2)^T*((Cov1+Cov2)/2.0)^-1 *(mean1-mean2)
         meandiff = m1-m2
         covdiff = (c1+c2)/2
@@ -60,63 +73,71 @@ class RoiCombinedHorizon(HorizonDetector):
         dist = np.matmul(meandiff.T,dist)
         #dist = dist*1/8
         #dist = dist + 0.5*np.log((np.linalg.det(covdiff))/np.sqrt(np.linalg.det(c1)*np.linalg.det(c2)) )
-        #dist=meandiff.T*(np.linalg.inv(covdiff)*meandiff)
+
         return dist
  
     def detect_roi(self, image):
 
         #create horizontal region slides of the image with 50% overlap
-        regionSplitsCount = 6
-        regionSubSplitsCount = regionSplitsCount+2
-        imgHeight= image.shape[0]
+        regionSplitsCount = 4
+        regionSubSplitsCount = regionSplitsCount+2 # one at the top , one at the bottom of the image
+        imgHeight = image.shape[0] 
         regionStepSize = imgHeight/(regionSubSplitsCount-1)
-        #regionSplitHeight = imgHeight/(regionSplitsCount-1)
-        print(imgHeight)
-        print(regionStepSize)
-
+ 
         curYval=0
         regionsMeanAndCovar=[]
-        regionsImgs=[]
+        #regionsImgs=[]
+        regions=[]
         for i in range(regionSubSplitsCount):
             regionSplitYStart=int(curYval-regionStepSize) 
             regionSplitYEnd=int(curYval+regionStepSize)
             regionSplitYStart = max(regionSplitYStart,0)
             regionSplitYEnd = min(regionSplitYEnd,imgHeight)
-            print("-----")                        
-            print(regionSplitYStart)
-            print(regionSplitYEnd)
+            region = [regionSplitYStart,regionSplitYEnd,0,image.shape[1]]
+            regions.append(region)
+            #print("-----")                        
+            #print(regionSplitYStart)
+            #print(regionSplitYEnd)
             #oneImgSplit = inpic[regionSplitYStart:regionSplitYEnd,0:inpic.shape[1]]
             #print(oneImgSplit.shape)
             curYval = curYval+regionStepSize
             #imgSplitted.append(oneImgSplit)
             #ySplits.append([regionSplitYStart,regionSplitYEnd])
-            regionImg = image[regionSplitYStart:regionSplitYEnd,0:image.shape[1]]
-            regionsImgs.append(regionImg)
-            cv2.imshow('regionImg', regionImg)
+            regionImg = image[region[0]:region[1],region[2]:region[3]]
+            #regionsImgs.append(regionImg)
+            #regionsImgs.append(cv2.cvtColor(regionImg, cv2.COLOR_HSV2RGB))
+            #cv2.imshow('regionImg', regionImg)
             
             regionColorMean = self.getColorMeans(regionImg)
             regionColorCovar = self.getColorCovar(regionImg)
             regionsMeanAndCovar.append([regionColorMean,regionColorCovar])
 
+        #print("-------------")
         subRegionDists = []
         for i in range(regionSubSplitsCount-1):
             subRegionDist = self.calc_bhattacharyya_dist(
                 regionsMeanAndCovar[i][0],regionsMeanAndCovar[i+1][0],
                 regionsMeanAndCovar[i][1],regionsMeanAndCovar[i+1][1])
             subRegionDists.append(subRegionDist)
-        print(subRegionDists)
-
+            #print(subRegionDist)
+        
+        #print("-------------")
         regionDists = []
         for i in range(regionSplitsCount):
             regionDist = subRegionDists[i] + subRegionDists[i+1]
             regionDists.append(regionDist)
-        print(regionDists)
+            #print(regionDist)
+        
 
-        fig, axes = plt.subplots(regionSubSplitsCount, 1) #, sharex='row', sharey='row'
-        for i in range(regionSubSplitsCount):
-            axes[i].imshow(regionsImgs[i])
-        plt.show()
-        cv2.waitKey(0)
+        #fig, axes = plt.subplots(regionSubSplitsCount, 1) #, sharex='row', sharey='row'
+        #for i in range(regionSubSplitsCount):
+        #    axes[i].imshow(regionsImgs[i])
+        #plt.show()
+        #cv2.waitKey(0)
+
+        regionMaxDistIdx = regionDists.index(max(regionDists))+1
+        ROI = regions[regionMaxDistIdx]
+        return ROI
 
     def detect_horizon(self, image):
         gray=cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
@@ -124,7 +145,7 @@ class RoiCombinedHorizon(HorizonDetector):
         #sharpe image
         blured = cv2.GaussianBlur(gray, (0,0), 15)
         sharpened = cv2.addWeighted(gray, 1.5, blured, -0.5, 0)
-        #cv2.imshow('gray', gray)
+        cv2.imshow('gray', gray)
         #cv2.imshow('sharpened', sharpened)
 
         #multiscale edge processing
@@ -132,7 +153,7 @@ class RoiCombinedHorizon(HorizonDetector):
         medianscales = [5,11,15,21]
         
         weight = 1.0/len(medianscales)
-        cannyMin = 20 # pixelvalues below will be thrown out
+        cannyMin = 40 # pixelvalues below will be thrown out
                       # pixelvalues between will be considered as edge, if connected to strong edge
         cannyMax = 60 # pixelvalues above will be considered as strong edge 
         for oneMedianScale in medianscales:
@@ -148,27 +169,39 @@ class RoiCombinedHorizon(HorizonDetector):
                 
         edgeimage = edgeimage.astype(np.uint8)
         cv2.imshow('edgeimage', edgeimage) 
+        
+        if np.max(edgeimage) == 0:
+            print("edgeimage max == 0")
+            return
+
 
         #Only keep strongest edges
-        threshold=90
+        threshold=80
         ret, threshed = cv2.threshold(edgeimage, threshold, 255, cv2.THRESH_BINARY)
         cv2.imshow('threshed', threshed) 
-        cv2.waitKey(0)
+        #cv2.waitKey(0)
+
+        if np.max(threshed) == 0:
+            print("threshed max == 0")
+            return
 
         #Inital horizont guess via hough transform
-        minLineLength = 100
+        minLineLength = 80
         maxLineGap = 50
-        houghThresh=1
+        houghThresh=5
         lines = cv2.HoughLinesP(image=threshed,rho=1,theta=np.pi/(180*2),threshold=houghThresh,minLineLength=minLineLength,maxLineGap=maxLineGap)
+        if lines is None:
+            print("lines == 0")
+            return
         for oneline in lines:
             for x1,y1,x2,y2 in oneline:
                 cv2.line(image,(x1,y1),(x2,y2),(0,255,0),1)
                 break # only take first line
             break # only take first line
 
-        #calc residual / error of every pixel to hough line
+        #calc residual / error of every pixel in edge image to hough line
         threshedPixelList=[]
-        distances=[]
+        residuals=[]
         x1,y1,x2,y2 in lines[0]#get line description by using the two points of the hough line
         p1=np.array([x1,y1])
         p2=np.array([x2,y2])
@@ -176,17 +209,17 @@ class RoiCombinedHorizon(HorizonDetector):
             threshedPixelList.append(onePix[0])
             p3=np.array([onePix[0][0],onePix[0][1]])
             d = np.linalg.norm(np.cross(p2-p1, p1-p3))/np.linalg.norm(p2-p1) 
-            distances.append(d)
+            residuals.append(d)
         
         #median filter thresholded pixels by residual / error => only keep pts with low error
-        q1=np.quantile(distances, 0.2) #calc q1 quantile for filtering
+        q1=np.quantile(residuals, 0.1) #calc q1 quantile for filtering
         medianFilteredHorizPts = []
-        for idx, oneDist in enumerate(distances):
+        for idx, oneDist in enumerate(residuals):
             if oneDist <= q1:
                 medianFilteredHorizPts.append(threshedPixelList[idx])
         medianFilteredHorizPts = np.array(medianFilteredHorizPts)
 
-        #fit final horizontal line by calc least square 
+        #fit final horizontal line by calc line through median filted points
         [vx,vy,x,y] = cv2.fitLine(
             points=medianFilteredHorizPts, 
             distType=cv2.DIST_L1,
@@ -199,16 +232,17 @@ class RoiCombinedHorizon(HorizonDetector):
         righty = int(((gray.shape[1]-x)*vy/vx)+y)
         cv2.line(image,(gray.shape[1]-1,righty),(0,lefty),(255,0,0),1)
         cv2.imshow('line', image)
-        cv2.waitKey(0) 
-        return 1
+
+        return vx,vy,x,y
 
 
 a = RoiCombinedHorizon(0)
-images=["horizontest.jpg","horizontest2.jpg","horizontest4.jpg","horizontest5.png"]
-img=cv2.imread(images[0], cv2.IMREAD_COLOR)
-img = cv2.resize(img, (800,300))
+images=["horizontest4.jpg","horizontest5.png","test6.jpg","test7.png","test8.png","test9.png"] # "horizontest.jpg",
+for oneimg in images:
+    img = cv2.imread(oneimg, cv2.IMREAD_COLOR)
+    img = cv2.resize(img, (800,300))
 
-a.get_horizon(img)
+    a.get_horizon(img)
 
 
 class KMeanHorizon(HorizonDetector):
