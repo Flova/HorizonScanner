@@ -5,9 +5,6 @@ import time
 import math
 
 
-import matplotlib.pyplot as plt
-
-
 class HorizonDetector(object):
     """
     Abstract definition of a horizon detector
@@ -355,8 +352,7 @@ class KMeanHorizon(HorizonDetector):
 
             # Determine which class is the sky
             if label[0] != 1:
-                # Invert
-                # if the sky is not class 1
+                # Invert if the sky is not class 1
                 label = np.invert(label)
 
             # Weired bug fix
