@@ -13,4 +13,5 @@ boat_finder:
 
 default_roi_height: 20
 complementary_filter_k: 0.5
+threshold: 40
 video_source: "/home/<user>/data" # or "/dev/video0"
