@@ -52,7 +52,7 @@ class BoatDetector(object):
             frame = cv2.resize(frame, (1200,800)) # TODO keep aspect ratio
 
             # Run detection on frame
-            roi, rotated, dog  = self.analyse_image(frame, roi_height=self._params['default_roi_height'], history=True)
+            roi, rotated, feature_map, binary_detections  = self.analyse_image(frame, roi_height=self._params['default_roi_height'], history=True)
 
             roi_view = cv2.resize(roi, (1200, 60))
 
@@ -60,8 +60,10 @@ class BoatDetector(object):
             cv2.imshow('ROI', roi_view)
             cv2.imshow('ROT', rotated)
             # Repeat for viz
-            dog_large = np.repeat(dog, 60, axis=0)
-            cv2.imshow('DOG', dog_large)
+            feature_map_large = np.repeat(feature_map, 60, axis=0)
+            binary_detections = np.repeat(binary_detections, 60, axis=0)
+            cv2.imshow('Feature Map', feature_map_large)
+            cv2.imshow('Binary detections', binary_detections)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -103,6 +105,15 @@ class BoatDetector(object):
         if history and self._last_frame_feature_map is not None:
             feature_map = (self._last_frame_feature_map * K + feature_map * (1 - K)).astype(np.uint8)
 
+        # Add median filter for noise suppression
+        median_features = cv2.medianBlur(feature_map, 5)
+
+         # Calculate mean of detections
+        mean = np.mean(median_features, axis=1)
+
+        # Add threshold
+        _, median_features_thresh = cv2.threshold(median_features, int(mean + 30), 255, cv2.THRESH_BINARY)
+
         # Set last image to current image
         if history:
             self._last_frame_feature_map = feature_map.copy()
@@ -110,7 +121,8 @@ class BoatDetector(object):
         return (
             roi,
             rotated,
-            feature_map
+            median_features
+            median_features_thresh
         )
 
 if __name__ == "__main__":
