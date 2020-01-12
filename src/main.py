@@ -112,7 +112,7 @@ class BoatDetector(object):
         mean = np.mean(median_features, axis=1)
 
         # Add threshold
-        _, median_features_thresh = cv2.threshold(median_features, int(mean + 30), 255, cv2.THRESH_BINARY)
+        _, median_features_thresh = cv2.threshold(median_features, int(mean + 40), 255, cv2.THRESH_BINARY)
 
         # Set last image to current image
         if history:
@@ -121,7 +121,7 @@ class BoatDetector(object):
         return (
             roi,
             rotated,
-            median_features
+            median_features,
             median_features_thresh
         )
 
