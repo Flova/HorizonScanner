@@ -25,7 +25,7 @@ class RoiCombinedHorizon(HorizonDetector):
         self.invalid_horizon = (-1,-1,-1,-1,-1)
         
     def get_horizon(self, image):
-
+        start = time.time()
         if self._params['horiz_det_use_roi_det']:
             start =time.time()
             ROI=self.detect_roi(image)
@@ -39,6 +39,8 @@ class RoiCombinedHorizon(HorizonDetector):
             y = y + ROI[0]
 
         confidence = 1 #TODO find metric
+        end=time.time()
+        if self._params['horiz_det_profile']: print("horizont:",end-start)
 
         return vx,vy,x,y, confidence 
 

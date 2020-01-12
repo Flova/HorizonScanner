@@ -44,17 +44,15 @@ class BoatDetector(object):
             # Capture frame-by-frame
             ret, frame = self._cap.read()
 
-            if ret == False:
+            if frame is None:
+                print("Video finished / source closed")
                 break
 
             # Resize frame
-            frame = cv2.resize(frame, (800,600)) # TODO keep aspect ratio
-            
+            frame = cv2.resize(frame, (1200,800)) # TODO keep aspect ratio
             
             # Run detection on frame
-
-            valid, roi, rotated, dog  = self.analyse_image(frame, roi_height=self._params['default_roi_height'], history=True)
-
+            valid, roi, rotated, feature_map, binary_detections  = self.analyse_image(frame, roi_height=self._params['default_roi_height'], history=True)
 
             if valid == True:
                 roi_view = cv2.resize(roi, (1200, 60))
@@ -63,8 +61,10 @@ class BoatDetector(object):
                 cv2.imshow('ROI', roi_view)
                 cv2.imshow('ROT', rotated)
                 # Repeat for viz
-                dog_large = np.repeat(dog, 60, axis=0)
-                cv2.imshow('DOG', dog_large)
+                feature_map_large = np.repeat(feature_map, 60, axis=0)
+                binary_detections = np.repeat(binary_detections, 60, axis=0)
+                cv2.imshow('Feature Map', feature_map_large)
+                cv2.imshow('Binary detections', binary_detections)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -74,7 +74,7 @@ class BoatDetector(object):
         cv2.destroyAllWindows()
 
     def analyse_image(self, image, roi_height=20, horizon=None, history=True):
-        print("-----------------------")
+
         # Make grayscale version
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
@@ -86,7 +86,7 @@ class BoatDetector(object):
             line_slope_x, line_slope_y, line_base_x, line_base_y, _ = horizon
         
         if line_base_x == -1: # invalid horizon
-            return (False,0,0,0)
+            return (False,0,0,0,0)
 
         horizonImg = image.copy()
         lefty = int((-line_base_x*line_slope_y/line_slope_x) + line_base_y)
@@ -94,14 +94,8 @@ class BoatDetector(object):
         cv2.line(horizonImg,(horizonImg.shape[1]-1,righty),(0,lefty),(0,0,255),1)
         cv2.imshow('horizont', horizonImg)
 
-        end=time.time()
-        print("horizont:",end-start)
-        
         # Rotate image 
-        start=time.time()
         rotated =  self.rotate_and_center_horizon(image,line_slope_x, line_slope_y, line_base_x, line_base_y)#imutils.rotate(image, math.degrees(math.atan(line_slope_x/ line_slope_y)))
-        end=time.time()
-        print("Rotate:",end-start)
         
         # Crop roi out of rotated image
         horizon_y_pos=image.shape[0] / 2  # line_base_x
@@ -124,9 +118,16 @@ class BoatDetector(object):
         # Calculate time based low pass using the complementary filter
         if history and self._last_frame_feature_map is not None:
             feature_map = (self._last_frame_feature_map * K + feature_map * (1 - K)).astype(np.uint8)
-        end=time.time()
-        print("boat detection:",end-start)
-        
+
+        # Add median filter for noise suppression
+        median_features = cv2.medianBlur(feature_map, 5)
+
+         # Calculate mean of detections
+        mean = np.mean(median_features, axis=1)
+
+        # Add threshold
+        _, median_features_thresh = cv2.threshold(median_features, int(mean + self._params['threshold']), 255, cv2.THRESH_BINARY)
+
         # Set last image to current image
         if history:
             self._last_frame_feature_map = feature_map.copy()
@@ -135,7 +136,8 @@ class BoatDetector(object):
             True,
             roi,
             rotated,
-            feature_map
+            median_features,
+            median_features_thresh
         )
     
     def rotate_and_center_horizon(self,img,vx,vy,x,y):

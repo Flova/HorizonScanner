@@ -50,7 +50,7 @@ class DOGBoatFinder(ROIBoatFinder):
 
         # Convert image
         dog = dog.astype(np.uint8)
-        
+
         # Show debug images
         if self._params['debug']:
             # Repeat for viz
