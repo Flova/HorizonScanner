@@ -44,6 +44,10 @@ class BoatDetector(object):
             # Capture frame-by-frame
             ret, frame = self._cap.read()
 
+            if frame is None:
+                print("Video finished / source closed")
+                break
+
             # Resize frame
             frame = cv2.resize(frame, (1200,800)) # TODO keep aspect ratio
 
