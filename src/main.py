@@ -20,7 +20,7 @@ class BoatDetector(object):
         self._params = params
 
         self._horizon_detector = RoiCombinedHorizon(self._params['horizon_detector'])
-        self._roi_boat_finder = DOGBoatFinder(self._params['boat_finder'])
+        self._roi_boat_finder = GradientBoatFinder(self._params['boat_finder'])
 
     def set_video_input(self, video_input):
         self._video_input = video_input
@@ -50,7 +50,7 @@ class BoatDetector(object):
 
             # Resize frame
             frame = cv2.resize(frame, (1200,800)) # TODO keep aspect ratio
-            
+
             # Run detection on frame
             valid, roi, rotated, feature_map, binary_detections  = self.analyse_image(frame, roi_height=self._params['default_roi_height'], history=True)
 
@@ -84,19 +84,20 @@ class BoatDetector(object):
             line_slope_x, line_slope_y, line_base_x, line_base_y, _ = self._horizon_detector.get_horizon(image)
         else:
             line_slope_x, line_slope_y, line_base_x, line_base_y, _ = horizon
-        
+
         if line_base_x == -1: # invalid horizon
             return (False,0,0,0,0)
 
+        # Show debug image with the detected line
         horizonImg = image.copy()
         lefty = int((-line_base_x*line_slope_y/line_slope_x) + line_base_y)
         righty = int(((horizonImg.shape[1]-line_base_x)*line_slope_y/line_slope_x)+line_base_y)
         cv2.line(horizonImg,(horizonImg.shape[1]-1,righty),(0,lefty),(0,0,255),1)
         cv2.imshow('horizont', horizonImg)
 
-        # Rotate image 
+        # Rotate image
         rotated =  self.rotate_and_center_horizon(image,line_slope_x, line_slope_y, line_base_x, line_base_y)#imutils.rotate(image, math.degrees(math.atan(line_slope_x/ line_slope_y)))
-        
+
         # Crop roi out of rotated image
         horizon_y_pos=image.shape[0] / 2  # line_base_x
         roi = rotated[
@@ -108,8 +109,10 @@ class BoatDetector(object):
                 int(horizon_y_pos + roi_height // 2),
                 rotated.shape[0]),
             :]
-        
+
         start=time.time()
+
+        # Get feature map
         feature_map = self._roi_boat_finder.find_boats_in_roi(roi)
 
         # Get K for the complementary filter
@@ -139,7 +142,7 @@ class BoatDetector(object):
             median_features,
             median_features_thresh
         )
-    
+
     def rotate_and_center_horizon(self,img,vx,vy,x,y):
         sx=img.shape[1]/2
         l=(sx-x)/vx
