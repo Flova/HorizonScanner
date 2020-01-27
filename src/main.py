@@ -58,15 +58,14 @@ class BoatDetector(object):
 
             if valid == True:
                 roi_view = cv2.resize(roi, (1200, 60))
-
-                # Show images
-                cv2.imshow('ROI', roi_view)
-                cv2.imshow('ROT', rotated)
                 # Repeat for viz
                 feature_map_large = np.repeat(feature_map, 60, axis=0)
-                binary_detections = np.repeat(binary_detections, 60, axis=0)
-                cv2.imshow('Feature Map', feature_map_large)
-                cv2.imshow('Binary detections', binary_detections)
+                binary_detections_large = np.repeat(binary_detections, 60, axis=0)
+                combines_detections = np.concatenate((feature_map_large, binary_detections_large), axis=0)
+                detections_with_roi = np.concatenate((roi_view, cv2.cvtColor(combines_detections, cv2.COLOR_GRAY2BGR)), axis=0)
+                # Show images
+                cv2.imshow('Detections', detections_with_roi)
+                cv2.imshow('ROT', rotated)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
