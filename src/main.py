@@ -123,6 +123,8 @@ class BoatDetector(object):
         # Calculate time based low pass using the complementary filter
         if history and self._last_frame_feature_map is not None:
             feature_map = (self._last_frame_feature_map * K + feature_map * (1 - K)).astype(np.uint8)
+        elif history:
+            history_map = (feature_map * (1 - K)).astype(np.uint8)
 
         # Add median filter for noise suppression
         median_features = cv2.medianBlur(feature_map, 5)
