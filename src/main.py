@@ -22,6 +22,7 @@ class BoatDetector(object):
 
         self._horizon_detector = RoiCombinedHorizon(self._params['horizon_detector'])
         self._roi_boat_finder = GradientBoatFinder(self._params['boat_finder'])
+        self._candidate_finder = CandidateFinder()
 
     def set_video_input(self, video_input):
         self._video_input = video_input
