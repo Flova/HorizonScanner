@@ -8,6 +8,7 @@ import os
 import yaml
 from horizon import KMeanHorizon, RoiCombinedHorizon
 from roi_boat_finder import DOGBoatFinder, GradientBoatFinder
+from candidate_finder import CandidateFinder
 
 
 class BoatDetector(object):
@@ -134,6 +135,11 @@ class BoatDetector(object):
         # Set last image to current image
         if history:
             self._last_frame_feature_map = feature_map.copy()
+
+        candidates = self._candidate_finder.get_candidates(median_features_thresh)
+
+        #if candidates:
+            #cv2.imshow("BBx", roi[:, candidates[0][0]: candidates[0][1], :])
 
         return (
             True,
