@@ -330,11 +330,12 @@ class KMeanHorizon(HorizonDetector):
         # Binary image in which the horizon points are placed
         points = np.zeros_like(gray_image)
 
-
         # Iterate over vertical image slices
         for i in range(0, int(image.shape[1] - k_mean_width), k_mean_stepsize):
             # Get vertical image slice as float array
-            Z = np.float32(image[:, i:i + k_mean_width])
+            Z = np.float32(cv2.cvtColor(image[:, i:i + k_mean_width], cv2.COLOR_BGR2HSV))
+
+            Z = np.mean(Z, axis=1)
 
             # K-Means termination settings
             criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
@@ -359,8 +360,14 @@ class KMeanHorizon(HorizonDetector):
             cv2.circle(points, point, 1, 255, -1)    # TODO  use list of points instead
 
         # Fit a RANSEC like line in the horizon point map  (default params)
-        line_slope_x, line_slope_y, line_base_x, line_base_y = cv2.fitLine(np.argwhere(points == 255), cv2.DIST_L1, 0, 0.005, 0.01)
+        [line_slope_x, line_slope_y, line_base_x, line_base_y] = cv2.fitLine(np.argwhere(points == 255), cv2.DIST_L1, 0, 0.005, 0.01)
 
         confidence = 1 # TODO find better confidence metric
 
-        return line_slope_x, line_slope_y, line_base_x, line_base_y, confidence
+        alpha = 1.0
+        beta = ( 1.0 - alpha )
+        gray_image = cv2.addWeighted(points, 1, gray_image, 1, 0)
+
+        cv2.imshow("a", gray_image)
+
+        return line_slope_y, line_slope_x, line_base_y, line_base_x, confidence
