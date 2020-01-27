@@ -23,7 +23,7 @@ class RoiCombinedHorizon(HorizonDetector):
     def __init__(self, params):
         super().__init__(params)
         self.invalid_horizon = (-1,-1,-1,-1,-1)
-        
+
     def get_horizon(self, image):
         start = time.time()
         if self._params['horiz_det_use_roi_det']:
@@ -31,7 +31,7 @@ class RoiCombinedHorizon(HorizonDetector):
             ROI=self.detect_roi(image)
             image = image[ROI[0]:ROI[1],ROI[2]:ROI[3]]
             end=time.time()
-            if self._params['horiz_det_profile']: print("ROI det:",end-start) 
+            if self._params['horiz_det_profile']: print("ROI det:",end-start)
 
         vx,vy,x,y, confidence = self.detect_horizon(image)
 
@@ -42,22 +42,22 @@ class RoiCombinedHorizon(HorizonDetector):
         end=time.time()
         if self._params['horiz_det_profile']: print("horizont:",end-start)
 
-        return vx,vy,x,y, confidence 
+        return vx,vy,x,y, confidence
 
 
     def detect_roi(self, image):
         #create horizontal regions of the image with 50% overlap
         regionSplitsCount = self._params['horiz_det_roi_det_horizontal_regions']
         regionSubSplitsCount = regionSplitsCount+2 # one at the top , one at the bottom of the image
-        imgHeight = image.shape[0] 
+        imgHeight = image.shape[0]
         regionStepSize = imgHeight/(regionSubSplitsCount-1)
- 
+
         curYval=0
         regionsMeanAndCovar=[]
         regionsImgs=[]
         regions=[]
         for i in range(regionSubSplitsCount):
-            regionSplitYStart=int(curYval-regionStepSize) 
+            regionSplitYStart=int(curYval-regionStepSize)
             regionSplitYEnd=int(curYval+regionStepSize)
             regionSplitYStart = max(regionSplitYStart,0)
             regionSplitYEnd = min(regionSplitYEnd,imgHeight)
@@ -68,7 +68,7 @@ class RoiCombinedHorizon(HorizonDetector):
             regionImg = image[region[0]:region[1],region[2]:region[3]]
             if self._params['debug']:
                 regionsImgs.append(regionImg)
-            
+
             regionColorMean = self.getColorMeans(regionImg)
             regionColorCovar = self.getColorCovar(regionImg)
             regionsMeanAndCovar.append([regionColorMean,regionColorCovar])
@@ -80,7 +80,7 @@ class RoiCombinedHorizon(HorizonDetector):
             subRegionDist = self.calc_bhattacharyya_dist(
                 regionsMeanAndCovar[i][0],regionsMeanAndCovar[i+1][0],
                 regionsMeanAndCovar[i][1],regionsMeanAndCovar[i+1][1])
-            subRegionDists.append(subRegionDist)        
+            subRegionDists.append(subRegionDist)
 
         # Calc distance of each region[i] to subRegionDists[i+1] and subRegionDists[i-1]
         regionDists = []
@@ -117,19 +117,19 @@ class RoiCombinedHorizon(HorizonDetector):
                 if i >= 1 and i <= len(regionDists):
                     pos =(regionDebugImg.shape[1]//2,ypos+int(regionStepSize))
                     regionDebugImg = cv2.putText(
-                        img=regionDebugImg, text=str(round(float(regionDists[i-1]), 2)),org=pos, 
-                        fontFace=cv2.FONT_HERSHEY_SIMPLEX,fontScale=1, color=(0, 255, 0) ,thickness=2) 
+                        img=regionDebugImg, text=str(round(float(regionDists[i-1]), 2)),org=pos,
+                        fontFace=cv2.FONT_HERSHEY_SIMPLEX,fontScale=1, color=(0, 255, 0) ,thickness=2)
                     if i == regionMaxDistIdx:
-                        cv2.rectangle(regionDebugImg, (xpos,ypos), (xpos+regionsImgs[i].shape[1],ypos+regionsImgs[i].shape[0]), (0,255,0), thickness=5) 
+                        cv2.rectangle(regionDebugImg, (xpos,ypos), (xpos+regionsImgs[i].shape[1],ypos+regionsImgs[i].shape[0]), (0,255,0), thickness=5)
                     if self._params['horiz_det_roi_det_use_extended_region'] and i == extendedRegionIdx:
-                        cv2.rectangle(regionDebugImg, (xpos,ypos), (xpos+regionsImgs[i].shape[1],ypos+regionsImgs[i].shape[0]), (0,255,255), thickness=5) 
+                        cv2.rectangle(regionDebugImg, (xpos,ypos), (xpos+regionsImgs[i].shape[1],ypos+regionsImgs[i].shape[0]), (0,255,255), thickness=5)
                 ypos=ypos+regionsSpacer+int(regionStepSize*2)
 
             scale_percent = 50 # percent of original size
             width = int(regionDebugImg.shape[1] * scale_percent / 100)
             height = int(regionDebugImg.shape[0] * scale_percent / 100)
             dim = (width, height)
-            regionDebugImg = cv2.resize(regionDebugImg, dim, interpolation = cv2.INTER_AREA) 
+            regionDebugImg = cv2.resize(regionDebugImg, dim, interpolation = cv2.INTER_AREA)
             cv2.imshow('region dists', regionDebugImg)
 
         return ROI
@@ -180,11 +180,11 @@ class RoiCombinedHorizon(HorizonDetector):
         start=time.time()
         edgeimage = np.zeros(gray.shape,dtype=np.uint8)
         medianscales = [5,11,15,21]
-        
+
         weight = np.float32(1.0/(len(medianscales)))
         cannyMin = self._params['horiz_det_canny_min']  # below will not be considered as edge
                                                         # between will be considered as edge, if connected to strong edge
-        cannyMax = self._params['horiz_det_canny_max']  # above will be considered as strong edge 
+        cannyMax = self._params['horiz_det_canny_max']  # above will be considered as strong edge
         for oneMedianScale in medianscales:
             if oneMedianScale < 1:
                 median = gray
@@ -202,15 +202,15 @@ class RoiCombinedHorizon(HorizonDetector):
         kw = dict(ksize=ksize, scale=1, delta=0, borderType=cv2.BORDER_DEFAULT)
         grad_y = cv2.Sobel(gray, cv2.CV_16S, 0, 1, **kw)
         abs_grad_y = cv2.convertScaleAbs(grad_y)
-        #abs_grad_y_float = np.float32(abs_grad_y) * weight 
+        #abs_grad_y_float = np.float32(abs_grad_y) * weight
         threshold=150
         ret, abs_grad_y_threshed = cv2.threshold(abs_grad_y, threshold, 255, cv2.THRESH_BINARY)
         #cv2.imshow('abs_grad_y_threshed', abs_grad_y)
         edgeimage = cv2.add(edgeimage, abs_grad_y_threshed * np.float32(0.3))
         """
-        
+
         if self._params['debug']:
-            cv2.imshow('edgeimage', edgeimage)        
+            cv2.imshow('edgeimage', edgeimage)
 
         if np.max(edgeimage) == 0:
             print("edgeimage max == 0")
@@ -220,7 +220,7 @@ class RoiCombinedHorizon(HorizonDetector):
         edges_threshold=self._params['horiz_det_edge_threshold']
         ret, threshed = cv2.threshold(edgeimage, edges_threshold, 255, cv2.THRESH_BINARY)
         if self._params['debug']:
-            cv2.imshow('threshed', threshed) 
+            cv2.imshow('threshed', threshed)
             #cv2.waitKey(0)
 
         if np.max(threshed) == 0:
@@ -237,7 +237,7 @@ class RoiCombinedHorizon(HorizonDetector):
         start=time.time()
         minLineLength = threshed.shape[0]//1.5
         maxLineGap = threshed.shape[0]//4
-        
+
         lines = cv2.HoughLinesP(image=threshed,rho=1,theta=houghAngularRes,threshold=houghThresh,minLineLength=minLineLength,maxLineGap=maxLineGap)
         if lines is None:
             print("lines == 0")
@@ -247,7 +247,7 @@ class RoiCombinedHorizon(HorizonDetector):
                 cv2.line(image,(x1,y1),(x2,y2),(0,255,0),1)
                 break # only take first line
             break # only take first line
-        
+
         end=time.time()
         if self._params['horiz_det_profile']: print( end-start)
         """
@@ -290,14 +290,14 @@ class RoiCombinedHorizon(HorizonDetector):
         q1FilteredHorizontPts = thresholdedNonZero[residuals < q1]
         end=time.time()
         if self._params['horiz_det_profile']: print( "medianfilter:",end-start)
-        
+
         #fit final horizontal line by calc line through median filted points
         start=time.time()
         [vx,vy,x,y] = cv2.fitLine(
-            points=q1FilteredHorizontPts, 
+            points=q1FilteredHorizontPts,
             distType=cv2.DIST_L1,
-            param=0, 
-            reps=0.01, 
+            param=0,
+            reps=0.01,
             aeps=0.01)
         end=time.time()
         if self._params['horiz_det_profile']: print( "fitline:",end-start)
@@ -310,19 +310,10 @@ class RoiCombinedHorizon(HorizonDetector):
 
         confidence = 1
 
-        return vx,vy,x,y, confidence 
+        print(vx,vy,x,y, confidence)
 
-"""
-a = RoiCombinedHorizon(0)
-images=[  "horizontest.jpg", "horizontest4.jpg","horizontest5.png","test6.jpg","test7.png","test8.png","test9.png"] # ,
-for oneimg in images:
-    img = cv2.imread(oneimg, cv2.IMREAD_COLOR)
-    img = cv2.resize(img, (800,300))
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    cv2.imshow('image', image)
+        return vx,vy,x,y, confidence
 
-    a.get_horizon(img)
-"""
 
 class KMeanHorizon(HorizonDetector):
     def __init__(self, params):
