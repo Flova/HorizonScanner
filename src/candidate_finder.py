@@ -11,7 +11,7 @@ class CandidateFinder(object):
 
     def get_candidates(self, threshold_feature_map):
 
-        border_size = 5
+        border_size = 10 # TODO Param
         kernel_size = (41,1)
         gap_less_feature_map = cv2.blur(threshold_feature_map, kernel_size)
 
