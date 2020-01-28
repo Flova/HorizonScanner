@@ -310,8 +310,6 @@ class RoiCombinedHorizon(HorizonDetector):
 
         confidence = 1
 
-        print(vx,vy,x,y, confidence)
-
         return vx,vy,x,y, confidence
 
 
