@@ -54,15 +54,26 @@ class BoatDetector(object):
             frame = cv2.resize(frame, (1200,800)) # TODO keep aspect ratio
 
             # Run detection on frame
-            valid, roi, rotated, feature_map, binary_detections  = self.analyse_image(frame, roi_height=self._params['default_roi_height'], history=True)
+            valid, roi, rotated, feature_map, binary_detections, candidates  = self.analyse_image(frame, roi_height=self._params['default_roi_height'], history=True)
 
             if valid == True:
                 roi_view = cv2.resize(roi, (1200, 60))
+
+                # Draw candidates
+                candidate_canvas = np.zeros_like(roi)
+                if candidates:
+                    candidate_canvas_part = np.zeros((20,0,3), dtype=np.uint8)
+                    for index, candidate in enumerate(candidates):
+                        candidate_canvas_part = np.concatenate((candidate_canvas_part, roi[:, candidate[0]: candidate[1], :]), axis=1)
+                        candidate_canvas_part = np.concatenate((candidate_canvas_part, np.zeros((20,5,3), dtype=np.uint8)), axis=1)
+                    candidate_canvas[:,:candidate_canvas_part.shape[1]-5,:] += candidate_canvas_part[:, :-5,:]
+
                 # Repeat for viz
                 feature_map_large = np.repeat(feature_map, 60, axis=0)
                 binary_detections_large = np.repeat(binary_detections, 60, axis=0)
                 combines_detections = np.concatenate((feature_map_large, binary_detections_large), axis=0)
                 detections_with_roi = np.concatenate((roi_view, cv2.cvtColor(combines_detections, cv2.COLOR_GRAY2BGR)), axis=0)
+                detections_with_roi = np.concatenate((detections_with_roi, cv2.resize(candidate_canvas, (1200,60))), axis=0)
                 # Show images
                 cv2.imshow('Detections', detections_with_roi)
                 cv2.imshow('ROT', rotated)
@@ -87,7 +98,7 @@ class BoatDetector(object):
             line_slope_x, line_slope_y, line_base_x, line_base_y, _ = horizon
 
         if line_base_x == -1: # invalid horizon
-            return (False,0,0,0,0)
+            return (False,0,0,0,0,[])
 
         # Show debug image with the detected line
         horizonImg = image.copy()
@@ -140,15 +151,13 @@ class BoatDetector(object):
 
         candidates = self._candidate_finder.get_candidates(median_features_thresh)
 
-        #if candidates:
-            #cv2.imshow("BBx", roi[:, candidates[0][0]: candidates[0][1], :])
-
         return (
             True,
             roi,
             rotated,
             median_features,
-            median_features_thresh
+            median_features_thresh,
+            candidates
         )
 
     def rotate_and_center_horizon(self,img,vx,vy,x,y):
