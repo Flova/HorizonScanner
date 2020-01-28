@@ -4,14 +4,14 @@ horizon_detector:
     # k means horizontal detector
     k_mean_stepsize: 10
     k_mean_width: 5
-    # combined horizontal detector 
+    # combined horizontal detector
     horiz_det_profile: False
     horiz_det_use_roi_det: True # use ROI detector before calculation of horizont
     horiz_det_roi_det_horizontal_regions : 6 # count of horizontal splits
     horiz_det_roi_det_use_extended_region: True # If enabled, the region with the next highest dist to the most possible one will be also considered for the ROI
     horiz_det_canny_min: 40 # below will not be considered as edge
                             # between will be considered as edge, if connected to strong edge
-    horiz_det_canny_max: 60 # above will be considered as strong edge 
+    horiz_det_canny_max: 60 # above will be considered as strong edge
     horiz_det_edge_threshold: 120 # threshold for accumulated canny edges
     horiz_det_thresholded_q1: 0.15 # defines q1 quantile to filter out points with high distances from hough line
     debug: False
@@ -19,10 +19,10 @@ horizon_detector:
 boat_finder:
     boat_finder_dog_big_kernel: 51
     boat_finder_dog_small_kernel: 31
-    gradient_gain: 3
+    gradient_gain: 1
     debug: False
 
 default_roi_height: 20
 complementary_filter_k: 0.5
-threshold: 40
+threshold: 30
 video_source: "/home/<user>/data" # or "/dev/video0"
