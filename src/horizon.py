@@ -130,7 +130,7 @@ class RoiCombinedHorizon(HorizonDetector):
             height = int(regionDebugImg.shape[0] * scale_percent / 100)
             dim = (width, height)
             regionDebugImg = cv2.resize(regionDebugImg, dim, interpolation = cv2.INTER_AREA)
-            cv2.imshow('region dists', regionDebugImg)
+            #cv2.imshow('region dists', regionDebugImg)
 
         return ROI
 
@@ -366,6 +366,6 @@ class KMeanHorizon(HorizonDetector):
         beta = ( 1.0 - alpha )
         gray_image = cv2.addWeighted(points, 1, gray_image, 1, 0)
 
-        cv2.imshow("a", gray_image)
+        #cv2.imshow("a", gray_image)
 
-        return line_slope_y, line_slope_x, line_base_y, line_base_x, confidence
+        return -line_slope_y, line_slope_x, line_base_y, line_base_x, confidence

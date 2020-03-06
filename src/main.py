@@ -44,11 +44,12 @@ class BoatDetector(object):
 
         while(True):
             # Capture frame-by-frame
-            ret, frame = self._cap.read()
+            ret, frame_buffer = self._cap.read()
 
-            if frame is None:
+            if frame_buffer is None:
                 print("Video finished / source closed")
-                break
+            else:
+                frame = frame_buffer
 
             # Resize frame
             frame = cv2.resize(frame, (1200,800)) # TODO keep aspect ratio
@@ -86,7 +87,6 @@ class BoatDetector(object):
         cv2.destroyAllWindows()
 
     def analyse_image(self, image, roi_height=20, horizon=None, history=True):
-
         # Make grayscale version
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
@@ -100,12 +100,13 @@ class BoatDetector(object):
         if line_base_x == -1: # invalid horizon
             return (False,0,0,0,0,[])
 
+        """
         # Show debug image with the detected line
         horizonImg = image.copy()
         lefty = int((-line_base_x*line_slope_y/line_slope_x) + line_base_y)
         righty = int(((horizonImg.shape[1]-line_base_x)*line_slope_y/line_slope_x)+line_base_y)
         cv2.line(horizonImg,(horizonImg.shape[1]-1,righty),(0,lefty),(0,0,255),1)
-        cv2.imshow('horizont', horizonImg)
+        cv2.imshow('horizont', horizonImg)"""
 
         # Rotate image
         rotated =  self.rotate_and_center_horizon(image,line_slope_x, line_slope_y, line_base_x, line_base_y)#imutils.rotate(image, math.degrees(math.atan(line_slope_x/ line_slope_y)))
