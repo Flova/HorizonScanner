@@ -38,9 +38,54 @@ class BoatDetector(object):
             image,  image, mask=255-mask),
             cv2.add(colored_image*opacity, image*(1-opacity), mask=mask).astype(np.uint8))
 
+    def relocate_candidates(self, candidates, previous_candidates):
+        if not previous_candidates or not candidates:
+            return {}
+
+        lst=[]
+        for candi in candidates:
+            hist = cv2.calcHist([candi], [0, 1, 2], None, [8, 8, 8], [0, 256, 0, 256, 0, 256])
+            hist = cv2.normalize(hist, hist).flatten()
+            lst.append(hist)
+
+        olst=[]
+        for candi in previous_candidates:
+            hist = cv2.calcHist([candi], [0, 1, 2], None, [8, 8, 8], [0, 256, 0, 256, 0, 256])
+            hist = cv2.normalize(hist, hist).flatten()
+            olst.append(hist)
+
+
+        convs = []
+        for ni, a in enumerate(lst):
+            hists = []
+            for i, b in enumerate(olst):
+                hists.append((ni, i, abs(cv2.compareHist(a, b, cv2.HISTCMP_CHISQR))))
+            convs.extend(hists)
+
+        convs = sorted(convs, key = lambda x: x[2], reverse=False)
+
+        matched_cands = []
+        matched_o_cands = []
+        correlations = {}
+        for x in convs:
+            if not x[0] in matched_cands and not x[1] in matched_o_cands:
+                matched_cands.append(x[0])
+                matched_o_cands.append(x[1])
+                correlations[x[1]] = x[0]
+
+        return correlations
+
+    def render_candiates(self, roi, candidates):
+        rendered_candidates = []
+        for index, candidate in enumerate(candidates):
+            rendered_candidates.append(roi[:, candidate[0]: candidate[1], :])
+        return rendered_candidates
+
     def run_detector_on_video_input(self, video_input=None):
         if video_input is not None:
             self.set_video_input(video_input)
+
+        previous_rendered_candidates = []
 
         while(True):
             # Capture frame-by-frame
@@ -56,6 +101,10 @@ class BoatDetector(object):
 
             # Run detection on frame
             valid, roi, rotated, feature_map, binary_detections, candidates  = self.analyse_image(frame, roi_height=self._params['default_roi_height'], history=True)
+
+            rendered_candidates = self.render_candiates(roi, candidates)
+
+            print(self.relocate_candidates(rendered_candidates, previous_rendered_candidates))
 
             if valid == True:
                 roi_view = cv2.resize(roi, (1200, 60))
