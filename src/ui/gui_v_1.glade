@@ -79,6 +79,7 @@
             <property name="receives_default">True</property>
             <property name="relief">none</property>
             <signal name="toggled" handler="main_window_auto_toggled" swapped="no"/>
+            <accelerator key="a" signal="clicked"/>
           </object>
           <packing>
             <property name="expand">False</property>

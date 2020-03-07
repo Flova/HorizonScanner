@@ -48,20 +48,24 @@ class UserInterface(object):
         thread.daemon = True
         thread.start()
 
+        thread = Thread(target=self.video_manager.detector_runtime)
+        thread.daemon = True
+        thread.start()
+
         Gtk.main()
 
 
 class VideoManager(object):
     def __init__(self, state, boat_detector, config):
         self.buffer = []
-        self.buffer_size = 120
+        self.buffer_size = config['gui']['image_buffer_size']
         self.rewind_buffer = self.buffer.copy()
 
         self.boat_detector = boat_detector
         self.config = config
 
-        self.rewind_rate = 10
-        self._rewind_rate_counter = 0
+        self.rewind_speed = config['gui']['rewind_speed']
+        self._rewind_speed_counter = 0
 
         self.video_source = self.config['video_source']
 
@@ -74,27 +78,29 @@ class VideoManager(object):
         self.previous_state = state.copy()
 
         self.image_shape = None
+        self.image = None
 
         self.cap = cv2.VideoCapture(self.video_source)
         self.frame_rate = self.cap.get(cv2.CAP_PROP_FPS)
 
     def add_to_buffer(self, image):
-        self._rewind_rate_counter = (self._rewind_rate_counter + 1) %  self.rewind_rate
-        if self._rewind_rate_counter == 0:
-            if len(self.buffer) > self.buffer_size * 30:
+        self._rewind_speed_counter = (self._rewind_speed_counter + 1) %  self.rewind_speed
+        if self._rewind_speed_counter == 0:
+            if len(self.buffer) > self.buffer_size * self.frame_rate:
                 del self.buffer[0]
             self.buffer.append(image)
 
     def display_image(self, image):
         image_height = 800
         image_width = int((self.image_shape[1]/self.image_shape[0])*image_height)
-        image = cv2.resize(image, (image_width, image_height))
+        image = cv2.resize(image.astype(np.uint8), (image_width, image_height))
         GLib.idle_add(self.display_image_callback, image)
 
-    def display_candiates(self, roi, candidates):
+    def display_candiates(self, roi, candidates, candidate_movement):
         for index, candidate in enumerate(candidates):
-            candidate = roi[:, candidate[0]: candidate[1], :]
-            GLib.idle_add(self.set_candidate_callback, candidate)
+            if not index in candidate_movement.values():
+                candidate = roi[:, candidate[0]: candidate[1], :]
+                GLib.idle_add(self.set_candidate_callback, candidate.astype(np.uint8))
 
     def set_image_callback(self, callback):
         self.display_image_callback = callback
@@ -102,19 +108,38 @@ class VideoManager(object):
     def set_candidate_callback(self, callback):
         self.set_candidate_callback = callback
 
+    def detector_runtime(self):
+        old_candidates = []
+        while True:
+            if self.state['auto']:
+                # Run detection on frame
+                image = self.image.copy()
+                valid, roi, _, _, _, candidates  = self.boat_detector.analyse_image(image, roi_height=30, history=True)
+                if valid:
+                    rendered_candidates = self.boat_detector.render_candiates(roi, candidates)
+
+                    candidate_movement = self.boat_detector.relocate_candidates(rendered_candidates, old_candidates)
+
+                    self.display_candiates(roi, candidates, candidate_movement)
+
+                    old_candidates = rendered_candidates.copy()
+            else:
+                time.sleep(0.5)
+
     def image_get_runtime(self):
         while True:
             starttime = time.time()
             ret, framebuffer = self.cap.read()
 
+            if not ret:
+                print("Video source closed")
+                Gtk.main_quit()
+
             self.image_shape = framebuffer.shape
 
-            if self.state['auto']:
-                # Run detection on frame
-                valid, roi, framebuffer, feature_map, binary_detections, candidates  = self.boat_detector.analyse_image(framebuffer, roi_height=30, history=True)
-                self.display_candiates(roi, candidates)
-
             self.add_to_buffer(framebuffer)
+
+            self.image = framebuffer
 
             # Normal
             if not self.state['rewind'] and self.state['play']:
@@ -166,6 +191,7 @@ class MainWindowHandler(object):
             self.builder = builder
 
             self.state = state
+            self.config = config
 
             # Load splash image and init image object
             self.pixbuf = GdkPixbuf.Pixbuf().new_from_file('ui/images/splash_screen.jpg')
@@ -183,7 +209,6 @@ class MainWindowHandler(object):
             self.builder.connect_signals(self)
 
         def on_main_window_destroy(self, *args):
-
             Gtk.main_quit()
 
         def main_window_play_pause(self, *args):
@@ -203,7 +228,7 @@ class MainWindowHandler(object):
         def main_window_auto_toggled(self, button):
             self.state['auto'] = button.get_active()
             candidate_window = self.builder.get_object("candidate_window")
-            candidate_window.set_default_size(500, 800)
+            candidate_window.set_default_size(500, 500)
             if self.state['auto']:
                 candidate_window.show()
             else:
@@ -225,10 +250,10 @@ class MainWindowHandler(object):
             self.image_canvas.show()
 
         def add_candidate(self, candidate):
-            candidate_gallery = self.builder.get_object("candiate_gallery")
+            candidate = cv2.resize(candidate, (0,0), fx=2, fy=2)
             pixbuf = self._cv_image_to_pixbuf(candidate)
             self.candidate_liststore.insert(0, [pixbuf, ""])
-            if len(self.candidate_liststore) > 30:
+            if len(self.candidate_liststore) > self.config['gui']['candidate_list_length']:
                 del self.candidate_liststore[-1]
 
 
