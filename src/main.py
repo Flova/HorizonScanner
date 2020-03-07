@@ -128,6 +128,8 @@ class BoatDetector(object):
                 cv2.imshow('Detections', detections_with_roi)
                 cv2.imshow('ROT', rotated)
 
+                previous_rendered_candidates = rendered_candidates.copy()
+
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
