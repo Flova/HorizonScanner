@@ -6,9 +6,9 @@ import imutils
 import math
 import os
 import yaml
-from horizon import KMeanHorizon, RoiCombinedHorizon
-from roi_boat_finder import DOGBoatFinder, GradientBoatFinder
-from candidate_finder import CandidateFinder
+from horizon_scanner.horizon import KMeanHorizon, RoiCombinedHorizon
+from horizon_scanner.roi_boat_finder import DOGBoatFinder, GradientBoatFinder
+from horizon_scanner.candidate_finder import CandidateFinder
 
 
 class BoatDetector(object):

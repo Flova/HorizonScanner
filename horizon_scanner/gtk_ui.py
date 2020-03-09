@@ -2,7 +2,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GdkPixbuf, Gdk, GLib
 from threading import Thread
-from main import BoatDetector
+from horizon_scanner.boat_detector import BoatDetector
 import numpy as np
 import yaml
 import time

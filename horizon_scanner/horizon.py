@@ -368,4 +368,4 @@ class KMeanHorizon(HorizonDetector):
 
         #cv2.imshow("a", gray_image)
 
-        return -line_slope_y, line_slope_x, line_base_y, line_base_x, confidence
+        return line_slope_y, -line_slope_x, line_base_y, line_base_x, confidence
