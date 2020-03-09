@@ -1,13 +1,15 @@
-import gi
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, GdkPixbuf, Gdk, GLib
-from threading import Thread
-from boat_detector import BoatDetector
 import numpy as np
 import yaml
 import time
 import cv2
 import os
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk, GdkPixbuf, Gdk, GLib
+from threading import Thread
+from boat_detector import BoatDetector
+from modules.candidate_matcher import HistogramMatcher
+from modules import candidate_finder
 
 class UserInterface(object):
     def __init__(self):
@@ -37,6 +39,8 @@ class UserInterface(object):
 
         # Load boat detector
         self.boat_detector = BoatDetector(self.config)
+
+        self.matcher = HistogramMatcher()
 
         #Create image buffer for rewind
         self.buffer = []
@@ -144,9 +148,9 @@ class UserInterface(object):
                 # Check if a valid result could be determined
                 if valid:
                     # Get the pixel values for each bounding box
-                    rendered_candidates = self.boat_detector.render_candiates(roi, candidates)
+                    rendered_candidates = candidate_finder.render_candiates(roi, candidates)
                     # Check if the candidate occurred before
-                    candidate_movement = self.boat_detector.relocate_candidates(rendered_candidates, old_candidates)
+                    candidate_movement = self.matcher.relocate_candidates(rendered_candidates, old_candidates)
                     # Send the candidates to the main thread
                     self.display_candiates(roi, candidates, candidate_movement)
                     old_candidates = rendered_candidates.copy()

@@ -5,6 +5,13 @@ import time
 import math
 
 
+def render_candiates(roi, candidates):
+    rendered_candidates = []
+    for index, candidate in enumerate(candidates):
+        rendered_candidates.append(roi[:, candidate[0]: candidate[1], :])
+    return rendered_candidates
+
+
 class CandidateFinder(object):
     def __init__(self):
         pass
@@ -33,4 +40,3 @@ class CandidateFinder(object):
                     candidates.append((start_index, stop_index))
 
         return candidates
-
