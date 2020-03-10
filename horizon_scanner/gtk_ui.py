@@ -171,7 +171,8 @@ class UserInterface(object):
             # Close if video source is closed
             if not ret or framebuffer is None:
                 print("Video source closed")
-                self.on_close()
+                GLib.idle_add(self.on_close)
+                return
             # Get frame shape
             self.image_shape = framebuffer.shape
             # Save frame in the buffer
@@ -312,12 +313,8 @@ class UserInterface(object):
         """
         # Resize candidate to the correct thumbnail size
         # Clip max width
-        max_width = 200
-        if candidate.shape[1] * 2 > max_width:
-            print("Too big")
-            candidate = cv2.resize(candidate, (0,0), fx=max_width/(candidate.shape[1] * 2), fy=max_width/(candidate.shape[1] * 2))
-        else:
-            candidate = cv2.resize(candidate, (0,0), fx=2, fy=2)
+        max_width = 100
+        candidate = cv2.resize(candidate, (0,0), fx=(max_width/candidate.shape[1]), fy=(max_width/candidate.shape[1]))
         # Convert candidates
         pixbuf = self._cv_image_to_pixbuf(candidate)
         # Insert it at the front of the list
