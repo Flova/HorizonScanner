@@ -2,7 +2,7 @@ data/
 misc/
 *.pyc
 .vscode/
+*.glade~
 
 # Ignore the config file
-
 config.yaml
