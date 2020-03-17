@@ -180,13 +180,13 @@
                 <property name="can_focus">False</property>
                 <property name="show_arrow">False</property>
                 <child>
-                  <object class="GtkToolButton">
+                  <object class="GtkToggleToolButton" id="rewind_button">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="tooltip_text" translatable="yes">Rewind 30 Seconds</property>
+                    <property name="tooltip_text" translatable="yes">Rewind</property>
                     <property name="use_underline">True</property>
                     <property name="stock_id">gtk-media-rewind</property>
-                    <signal name="clicked" handler="main_window_rewind" swapped="no"/>
+                    <signal name="toggled" handler="main_window_rewind_toggle" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">False</property>

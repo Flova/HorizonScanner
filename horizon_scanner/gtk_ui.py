@@ -205,6 +205,9 @@ class UserInterface(object):
                     # Reset state
                     del self.rewind_buffer
                     self.state['rewind'] = False
+                    # Deactivate button
+                    rewind_button = self.builder.get_object("rewind_button")
+                    rewind_button.set_active(False)
 
 
             # Recording mode
@@ -262,11 +265,11 @@ class UserInterface(object):
         else:
             play_button.props.stock_id = Gtk.STOCK_MEDIA_PLAY
 
-    def main_window_rewind(self, *args):
+    def main_window_rewind_toggle(self, button):
         """
         Callback to switch rewind state
         """
-        self.state['rewind'] = True
+        self.state['rewind'] = button.get_active()
 
     def main_window_record_toggle(self, button):
         """
