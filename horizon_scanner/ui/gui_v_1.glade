@@ -47,12 +47,39 @@
         <property name="margin_right">5</property>
         <property name="orientation">vertical</property>
         <child>
-          <object class="GtkButton">
-            <property name="label" translatable="yes">Settings</property>
+          <object class="GtkBox">
             <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-            <property name="relief">none</property>
+            <property name="can_focus">False</property>
+            <property name="margin_left">5</property>
+            <property name="margin_right">5</property>
+            <property name="margin_top">2</property>
+            <property name="margin_bottom">2</property>
+            <property name="spacing">6</property>
+            <property name="baseline_position">top</property>
+            <child>
+              <object class="GtkSwitch" id="auto_detection_switch">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <signal name="state-set" handler="main_window_auto_toggled" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">Auto Detection (beta)</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -61,9 +88,38 @@
           </packing>
         </child>
         <child>
-          <object class="GtkSeparator">
+          <object class="GtkBox">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="margin_left">5</property>
+            <property name="margin_right">5</property>
+            <property name="margin_top">2</property>
+            <property name="margin_bottom">2</property>
+            <property name="spacing">6</property>
+            <property name="baseline_position">top</property>
+            <child>
+              <object class="GtkSwitch" id="stabilize_switch">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">Stabilize (beta)</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">2</property>
+              </packing>
+            </child>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -72,14 +128,9 @@
           </packing>
         </child>
         <child>
-          <object class="GtkToggleButton">
-            <property name="label" translatable="yes">Auto Detection (Alpha)</property>
+          <object class="GtkSeparator">
             <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-            <property name="relief">none</property>
-            <signal name="toggled" handler="main_window_auto_toggled" swapped="no"/>
-            <accelerator key="a" signal="clicked"/>
+            <property name="can_focus">False</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -88,9 +139,12 @@
           </packing>
         </child>
         <child>
-          <object class="GtkSeparator">
+          <object class="GtkButton">
+            <property name="label" translatable="yes">About</property>
             <property name="visible">True</property>
-            <property name="can_focus">False</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="relief">none</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -111,20 +165,6 @@
             <property name="expand">False</property>
             <property name="fill">True</property>
             <property name="position">4</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkButton">
-            <property name="label" translatable="yes">About</property>
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-            <property name="relief">none</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">5</property>
           </packing>
         </child>
       </object>

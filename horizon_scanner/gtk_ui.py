@@ -277,12 +277,12 @@ class UserInterface(object):
         """
         self.state['record'] = button.get_active()
 
-    def main_window_auto_toggled(self, button):
+    def main_window_auto_toggled(self, switch, state):
         """
         Callback to activate/deactivate the boat detection
         """
         # Change state
-        self.state['auto'] = button.get_active()
+        self.state['auto'] = state
         # Show/hide window
         candidate_window = self.builder.get_object("candidate_window")
         candidate_window.set_default_size(500, 500)
