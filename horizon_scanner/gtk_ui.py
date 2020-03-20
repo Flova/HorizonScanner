@@ -297,6 +297,14 @@ class UserInterface(object):
     def open_recordings_clicked_cb(self, button):
         subprocess.run(['xdg-open', str(self.recording_folder)])
 
+    def open_about_window_cb(self, button):
+        about_window = self.builder.get_object("about_window")
+        about_window.show()
+
+    def close_about_window_cb(self, button):
+        about_window = self.builder.get_object("about_window")
+        about_window.hide()
+
     def _cv_image_to_pixbuf(self, image):
         """
         Convert cv image (numpy array) to a gtk pixelbuffer
