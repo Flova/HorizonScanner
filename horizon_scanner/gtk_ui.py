@@ -5,6 +5,7 @@ import yaml
 import time
 import cv2
 import os
+import subprocess
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GdkPixbuf, Gdk, GLib
@@ -16,6 +17,9 @@ from modules import candidate_finder
 class UserInterface(object):
     def __init__(self):
         self.base_path = os.path.dirname(__file__)
+
+        self.recording_folder = os.path.realpath(os.path.join(__file__, "../../recordings/"))
+        os.makedirs(self.recording_folder, exist_ok=True)
 
         # Load gtk builder
         self.builder = Gtk.Builder()
@@ -117,7 +121,7 @@ class UserInterface(object):
         Sends the image to the GTK Main thread while it is in idle mode
         """
         # Sacle image so the UI has the same size, no matter the input resolution
-        image_height = 800
+        image_height = 700
         image_width = int((self.image_shape[1]/self.image_shape[0])*image_height)
         image = cv2.resize(image.astype(np.uint8), (image_width, image_height))
         # Send image
@@ -215,11 +219,9 @@ class UserInterface(object):
                 # Check if the recorder needs to be crated (first recorded frame)
                 if self.video_recorder is None:
                     # Get path where the video should be saved (TODO config)
-                    video_output_path = os.path.realpath(
-                        os.path.join(
-                            __file__,
-                            "../../data/",
-                            time.strftime("%Y%m%d-%H%M%S") + ".mp4"))
+                    video_output_path = os.path.join(
+                            self.recording_folder,
+                            time.strftime("SAR-EYE-%Y%m%d-%H%M%S") + ".mp4")
                     # Set codec
                     fourcc = cv2.VideoWriter_fourcc(*'DIVX')
                     # Create video recorder
@@ -234,6 +236,7 @@ class UserInterface(object):
             if not self.state['record'] and self.previous_state['record']:
                 self.video_recorder.release()
                 del self.video_recorder
+                self.video_recorder = None
 
             self.previous_state = self.state.copy()
 
@@ -290,6 +293,9 @@ class UserInterface(object):
             candidate_window.show()
         else:
             candidate_window.hide()
+
+    def open_recordings_clicked_cb(self, button):
+        subprocess.run(['xdg-open', str(self.recording_folder)])
 
     def _cv_image_to_pixbuf(self, image):
         """
