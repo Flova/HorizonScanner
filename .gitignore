@@ -3,6 +3,7 @@ misc/
 *.pyc
 .vscode/
 *.glade~
+recordings/
 
 # Ignore the config file
 config.yaml
