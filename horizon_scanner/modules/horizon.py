@@ -179,7 +179,7 @@ class RoiCombinedHorizon(HorizonDetector):
         #multiscale edge processing
         start=time.time()
         edgeimage = np.zeros(gray.shape,dtype=np.uint8)
-        medianscales = [5,11,15,21]
+        medianscales = [31, 61, 81]
 
         weight = np.float32(1.0/(len(medianscales)))
         cannyMin = self._params['horiz_det_canny_min']  # below will not be considered as edge
@@ -190,7 +190,7 @@ class RoiCombinedHorizon(HorizonDetector):
                 median = gray
             else:
                 median = cv2.medianBlur(gray,oneMedianScale)
-            canny = cv2.Canny(median,cannyMin,cannyMax) * weight
+            canny = cv2.Canny(median, cannyMin, cannyMax) * weight
             #cannyweighted = astype(canny * weight)
             edgeimage = cv2.add(edgeimage, canny.astype(np.uint8))
 
