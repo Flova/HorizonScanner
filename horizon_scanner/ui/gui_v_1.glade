@@ -28,6 +28,7 @@
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="margin">0</property>
+            <property name="columns">3</property>
             <property name="item_width">70</property>
             <property name="row_spacing">0</property>
             <property name="column_spacing">0</property>
@@ -72,6 +73,8 @@
               <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="tooltip_text" translatable="yes">Detects boats by itself and shows a summary of the detected objects.
+(Still work in progress)</property>
                 <property name="label" translatable="yes">Auto Detection (beta)</property>
               </object>
               <packing>
@@ -112,6 +115,8 @@
               <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="tooltip_text" translatable="yes">Activates the software image stabilization in addition to the mechanical one.
+(Still work in progress)</property>
                 <property name="label" translatable="yes">Stabilize (beta)</property>
               </object>
               <packing>
@@ -139,6 +144,34 @@
           </packing>
         </child>
         <child>
+          <object class="GtkButton" id="open_recordings_button">
+            <property name="label" translatable="yes">Open Recordings</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="tooltip_text" translatable="yes">Opens the folder that contains the recorded videos.</property>
+            <property name="relief">none</property>
+            <property name="always_show_image">True</property>
+            <signal name="clicked" handler="open_recordings_clicked_cb" swapped="no"/>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">3</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSeparator">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">4</property>
+          </packing>
+        </child>
+        <child>
           <object class="GtkButton">
             <property name="label" translatable="yes">About</property>
             <property name="visible">True</property>
@@ -149,7 +182,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">3</property>
+            <property name="position">5</property>
           </packing>
         </child>
         <child>
@@ -158,13 +191,14 @@
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
+            <property name="tooltip_text" translatable="yes">Close this application</property>
             <property name="relief">none</property>
             <signal name="clicked" handler="on_main_window_destroy" swapped="no"/>
           </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">4</property>
+            <property name="position">6</property>
           </packing>
         </child>
       </object>
