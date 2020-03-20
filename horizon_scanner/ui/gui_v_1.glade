@@ -148,6 +148,7 @@
               <object class="GtkSwitch" id="stabilize_switch">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <signal name="state-set" handler="main_window_stable_toggled" swapped="no"/>
               </object>
               <packing>
                 <property name="expand">False</property>

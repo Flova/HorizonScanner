@@ -31,6 +31,7 @@ class UserInterface(object):
             'play': True,
             'record': False,
             'auto': False,
+            'stable': False,
         }
         self.previous_state = self.state.copy()
 
@@ -63,6 +64,7 @@ class UserInterface(object):
         # Image placeholders
         self.image_shape = None
         self.image = None
+        self.stable_image = None
 
         # Init capture device / image loader
         self.cap = cv2.VideoCapture(self.video_source)
@@ -146,11 +148,11 @@ class UserInterface(object):
         old_candidates = []
         while not self.shutdown:
             # Check if detector is activated
-            if self.state['auto']:
+            if (self.state['auto'] or self.state['stable']) and self.image is not None:
                 # Run detection on frame
                 image = self.image.copy()
                 # Run the detector on the image
-                valid, roi, _, _, _, candidates  = self.boat_detector.analyse_image(image, roi_height=30, history=True)
+                valid, roi, stable_image, _, _, candidates  = self.boat_detector.analyse_image(image, roi_height=30, history=True)
                 # Check if a valid result could be determined
                 if valid:
                     # Get the pixel values for each bounding box
@@ -160,6 +162,8 @@ class UserInterface(object):
                     # Send the candidates to the main thread
                     self.display_candiates(roi, candidates, candidate_movement)
                     old_candidates = rendered_candidates.copy()
+
+                    self.stable_image = stable_image
             else:
                 # Idle
                 time.sleep(0.5)
@@ -181,10 +185,14 @@ class UserInterface(object):
                 return
             # Get frame shape
             self.image_shape = framebuffer.shape
+            # Set image
+            self.image = framebuffer.copy()
+
+            if self.state['stable'] and self.stable_image is not None:
+                framebuffer = self.stable_image.copy()
+
             # Save frame in the buffer
             self.add_to_buffer(framebuffer)
-            # Set image
-            self.image = framebuffer
 
             # Normal mode and not paused
             if not self.state['rewind'] and self.state['play']:
@@ -293,6 +301,17 @@ class UserInterface(object):
             candidate_window.show()
         else:
             candidate_window.hide()
+
+    def main_window_stable_toggled(self, button, state):
+        """
+        Callback to activate/deactivate the stabilization
+        """
+        # Change state
+        self.state['stable'] = state
+        # Activate also auto detection if stabilization is active
+        if state:
+            detection_switch = self.builder.get_object("auto_detection_switch")
+            detection_switch.set_active(True)
 
     def open_recordings_clicked_cb(self, button):
         subprocess.run(['xdg-open', str(self.recording_folder)])
