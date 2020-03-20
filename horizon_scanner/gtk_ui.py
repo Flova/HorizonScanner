@@ -223,7 +223,7 @@ class UserInterface(object):
                             self.recording_folder,
                             time.strftime("SAR-EYE-%Y%m%d-%H%M%S") + ".mp4")
                     # Set codec
-                    fourcc = cv2.VideoWriter_fourcc(*'DIVX')
+                    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                     # Create video recorder
                     self.video_recorder = cv2.VideoWriter(
                         video_output_path,
