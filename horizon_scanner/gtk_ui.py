@@ -186,7 +186,7 @@ class UserInterface(object):
             # Get frame shape
             self.image_shape = framebuffer.shape
             # Set image
-            self.image = framebuffer.copy()
+            self.image = framebuffer
 
             if self.state['stable'] and self.stable_image is not None:
                 framebuffer = self.stable_image.copy()
