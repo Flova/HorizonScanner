@@ -99,6 +99,9 @@ class BoatDetector(object):
         cv2.destroyAllWindows()
 
     def analyse_image(self, image, roi_height=20, horizon=None, history=True):
+        # Bring image to constant size
+        image = cv2.resize(image, (1200,800))
+
         # Make grayscale version
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
@@ -150,7 +153,7 @@ class BoatDetector(object):
             history_map = (feature_map * (1 - K)).astype(np.uint8)
 
         # Add median filter for noise suppression
-        median_features = cv2.medianBlur(feature_map, 5)
+        median_features = cv2.medianBlur(feature_map, 3)
 
          # Calculate mean of detections
         mean = np.mean(median_features, axis=1)

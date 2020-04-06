@@ -79,7 +79,7 @@ class GradientBoatFinder(ROIBoatFinder):
         sobel_8u = np.uint8(abs_sobel64f) * gain
 
         # Pull the maximum gradient vertically
-        sobel = np.amax(sobel_8u, axis=0).reshape(1, -1)
+        sobel = np.mean(sobel_8u, axis=0).reshape(1, -1).astype(np.uint8)
 
         return sobel
 
